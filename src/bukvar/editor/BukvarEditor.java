@@ -6,6 +6,7 @@
 package bukvar.editor;
 
 import bukvar.structs.Bukvar;
+import bukvar.structs.Lession;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,6 +22,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
@@ -83,10 +85,11 @@ public class BukvarEditor extends Application {
     Spinner<Integer> spinMinMatchingImgs;
     
     Bukvar bukvar;
+    Lession selectedLession;
             
     @Override
     public void start(Stage primaryStage) {
-        bukvar = new Bukvar();
+        bukvar = Bukvar.getBukvar();
         
         groupHeader = new Group();
         {
@@ -95,29 +98,44 @@ public class BukvarEditor extends Application {
             border.setStroke(Color.BLACK);
             
             comboLessions = new ComboBox<>();
-            comboLessions.getItems().addAll("1", "л2", "л3");
             comboLessions.setTranslateX(DEFAULT_SPACING);
             comboLessions.setTranslateY(2 * DEFAULT_SPACING);
             comboLessions.setMinWidth(200);
             comboLessions.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+            comboLessions.valueProperty().addListener(new ChangeListener<String>() {
+                @Override public void changed(ObservableValue ov, String t, String t1) { selectLession(t1); }    
+            });
             btnSave = new Button();
             btnSave.setText("Сачувај");
             btnSave.setMaxWidth(120);
             btnSave.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             btnSave.setTranslateX(230);
             btnSave.setTranslateY(2 * DEFAULT_SPACING);
+            btnSave.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    bukvar.save();
+                }
+            });
             btnDelete = new Button();
             btnDelete.setText("Обриши");
             btnDelete.setMaxWidth(120);
             btnDelete.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             btnDelete.setTranslateX(330);
             btnDelete.setTranslateY(2 * DEFAULT_SPACING);
+            btnDelete.setOnAction((ActionEvent event) -> {
+                if (bukvar.deleteLession(selectedLession.name)) {
+                    refreshLessions();
+                    selectLession(bukvar.defaultLessionName);
+                }
+            });
             btnDefault = new Button();
             btnDefault.setText("Подразумевана");
             btnDefault.setMaxWidth(150);
             btnDefault.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             btnDefault.setTranslateX(430);
             btnDefault.setTranslateY(2 * DEFAULT_SPACING);
+            btnDefault.setOnAction((ActionEvent event) -> { bukvar.defaultLessionName = selectedLession.name; });
             fieldNewName = new TextField("");
             fieldNewName.fontProperty().set(Font.font(STYLESHEET_CASPIAN, 20));
             fieldNewName.setTranslateX(680);
@@ -129,6 +147,14 @@ public class BukvarEditor extends Application {
             btnNewLession.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             btnNewLession.setTranslateX(850);
             btnNewLession.setTranslateY(2 * DEFAULT_SPACING);
+            btnNewLession.setOnAction((ActionEvent event) -> {
+                String name = fieldNewName.getText();
+                if (name.length() > 0 && !bukvar.lessions.containsKey(name)) {
+                    bukvar.lessions.put(name, new Lession(name));
+                    selectLession(name);
+                    refreshLessions();
+                }
+            });
             
             groupHeader.getChildren().addAll(border, comboLessions, btnSave, btnDelete, btnDefault, fieldNewName, btnNewLession);
         }
@@ -224,15 +250,18 @@ public class BukvarEditor extends Application {
                 checkTimeIndef = new CheckBox("Неограничено");
                 checkTimeIndef.setTranslateX(DEFAULT_SPACING);
                 checkTimeIndef.setTranslateY(4 * DEFAULT_SPACING);
-                spinTime = new Spinner<>(1, 20, 1);
-                spinTime.setTranslateX(200);
-                spinTime.setTranslateY(4 * DEFAULT_SPACING);
                 checkTimeIndef.setOnAction(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
                         spinTime.setDisable(checkTimeIndef.isSelected());
+                        selectedLession.timeToPickImgsIndef = checkTimeIndef.isSelected();
                     }
                 });
+                spinTime = new Spinner<>(5, 20, 5);
+                spinTime.setTranslateX(200);
+                spinTime.setTranslateY(4 * DEFAULT_SPACING);
+                spinTime.valueProperty().addListener((ov, t, t1) -> { selectedLession.timeToPickImgsSecs = t1; });
+                
                 groupParam1.getChildren().addAll(border, text, checkTimeIndef, spinTime);
             }
             
@@ -247,6 +276,11 @@ public class BukvarEditor extends Application {
                 spinImgsToShow = new Spinner<>(4, 10, 1);
                 spinImgsToShow.setTranslateX(DEFAULT_SPACING);
                 spinImgsToShow.setTranslateY(4 * DEFAULT_SPACING);
+                spinImgsToShow.valueProperty().addListener((ov, t, t1) -> {
+                    IntegerSpinnerValueFactory isvf = (IntegerSpinnerValueFactory)spinMinMatchingImgs.getValueFactory();
+                    isvf.setMax(t1 - 1);
+                    selectedLession.imgsToPresent = t1;
+                });
                 groupParam2.getChildren().addAll(border, text, spinImgsToShow);
             }
             
@@ -258,9 +292,10 @@ public class BukvarEditor extends Application {
                 border.setFill(Color.TRANSPARENT);
                 border.setStroke(Color.BLACK);
                 Text text = new Text(DEFAULT_SPACING, 2 * DEFAULT_SPACING, "Минимални број коректних слика: ");
-                spinMinMatchingImgs = new Spinner<>(0, 4, 1);
+                spinMinMatchingImgs = new Spinner<>(0, 3, 1);
                 spinMinMatchingImgs.setTranslateX(DEFAULT_SPACING);
                 spinMinMatchingImgs.setTranslateY(4 * DEFAULT_SPACING);
+                spinMinMatchingImgs.valueProperty().addListener((ov, t, t1) -> { selectedLession.minMatchingImgs = t1; });
                 groupParam3.getChildren().addAll(border, text, spinMinMatchingImgs);
             }
             
@@ -271,10 +306,38 @@ public class BukvarEditor extends Application {
         root.getChildren().addAll(groupHeader, groupImages, groupParams);
         scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         
+        selectLession(bukvar.defaultLessionName);
+        refreshLessions();
+        
         primaryStage.setTitle("Буквар - Едитор");
         primaryStage.setScene(scene);
         primaryStage.resizableProperty().set(false);
         primaryStage.show();
+        
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override public void run() { bukvar.save(); }
+        });
+    }
+    
+    private void refreshLessions() {
+        comboLessions.getItems().clear();
+        comboLessions.getItems().addAll(bukvar.lessions.keySet());
+        comboLessions.setValue(bukvar.defaultLessionName);
+    }
+    
+    private void selectLession(String lessionName) {
+        bukvar.save();
+        
+        selectedLession = bukvar.lessions.get(lessionName);
+        comboLessions.setValue(lessionName);
+        
+        // Load images and assigned letters
+        
+        checkTimeIndef.setSelected(selectedLession.timeToPickImgsIndef);
+        spinTime.getValueFactory().setValue(selectedLession.timeToPickImgsSecs);
+        spinTime.setDisable(selectedLession.timeToPickImgsIndef);
+        spinImgsToShow.getValueFactory().setValue(selectedLession.imgsToPresent);
+        spinMinMatchingImgs.getValueFactory().setValue(selectedLession.minMatchingImgs);
     }
 
     /**

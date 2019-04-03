@@ -21,12 +21,12 @@ public class Lession implements Serializable {
     public int minMatchingImgs;
     public ArrayList<ImgContainer> images;
 
-    public Lession(String name, int timeToPickImgsSecs, int imgsToPresent, int minMatchingImgs) {
+    public Lession(String name) {
         this.name = name;
-        this.timeToPickImgsIndef = timeToPickImgsSecs == 0;
-        this.timeToPickImgsSecs = timeToPickImgsSecs;
-        this.imgsToPresent = imgsToPresent;
-        this.minMatchingImgs = minMatchingImgs;
+        this.timeToPickImgsIndef = true;
+        this.timeToPickImgsSecs = 0;
+        this.imgsToPresent = 4;
+        this.minMatchingImgs = 1;
         this.images = new ArrayList<>();
     }
     
