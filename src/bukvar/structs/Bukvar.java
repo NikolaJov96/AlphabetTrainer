@@ -57,6 +57,7 @@ public class Bukvar implements Serializable {
             oos.writeObject(this);
         } catch (Exception e) {
             System.out.println("Error dumping data file.");
+            System.out.println(e);
         } finally {
             try { fout.close(); } catch (IOException ex) {}
         }

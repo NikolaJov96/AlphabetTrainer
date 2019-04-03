@@ -6,10 +6,17 @@
 package bukvar.editor;
 
 import bukvar.structs.Bukvar;
+import bukvar.structs.ImgContainer;
 import bukvar.structs.Lession;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -24,11 +31,14 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 /**
@@ -62,34 +72,41 @@ public class BukvarEditor extends Application {
             "Н", "Њ", "О", "П", "Р", "С", "Т", "Ћ", "У", "Ф", "Х", "Ц", "Ч", "Џ", "Ш"
     ));
     
-    Scene scene;
-    Group root;
+    private Scene scene;
+    private Group root;
     
-    Group groupHeader;
-    ComboBox<String> comboLessions;
-    Button btnSave;
-    Button btnDelete;
-    Button btnDefault;
-    TextField fieldNewName;
-    Button btnNewLession;
+    private Group groupHeader;
+    private ComboBox<String> comboLessions;
+    private Button btnSave;
+    private Button btnDelete;
+    private Button btnDefault;
+    private TextField fieldNewName;
+    private Button btnNewLession;
     
-    Group groupImages;
-    Button btnNewImage;
-    Group groupImageList;
-    ScrollPane spImageList;
+    private Group groupImages;
+    private Button btnNewImage;
+    private Group groupImageList;
+    private ScrollPane spImageList;
+     
+    private Group groupParams;
+    private CheckBox checkTimeIndef;
+    private Spinner<Integer> spinTime;
+    private Spinner<Integer> spinImgsToShow;
+    private Spinner<Integer> spinMinMatchingImgs;
     
-    Group groupParams;
-    CheckBox checkTimeIndef;
-    Spinner<Integer> spinTime;
-    Spinner<Integer> spinImgsToShow;
-    Spinner<Integer> spinMinMatchingImgs;
+    private FileChooser fileChooser;
     
-    Bukvar bukvar;
-    Lession selectedLession;
+    private Bukvar bukvar;
+    private Lession selectedLession;
+    private double rememberedScrollPane = 0.0;
             
     @Override
     public void start(Stage primaryStage) {
         bukvar = Bukvar.getBukvar();
+        fileChooser = new FileChooser();
+        fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter(
+                "Images", "jpg", "png", "gif", "bmp"
+        ));
         
         groupHeader = new Group();
         {
@@ -103,7 +120,10 @@ public class BukvarEditor extends Application {
             comboLessions.setMinWidth(200);
             comboLessions.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             comboLessions.valueProperty().addListener(new ChangeListener<String>() {
-                @Override public void changed(ObservableValue ov, String t, String t1) { selectLession(t1); }    
+                @Override 
+                public void changed(ObservableValue ov, String t, String t1) { 
+                    if (t1 != null) { selectLession(t1); }
+                }
             });
             btnSave = new Button();
             btnSave.setText("Сачувај");
@@ -112,10 +132,7 @@ public class BukvarEditor extends Application {
             btnSave.setTranslateX(230);
             btnSave.setTranslateY(2 * DEFAULT_SPACING);
             btnSave.setOnAction(new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent event) {
-                    bukvar.save();
-                }
+                @Override public void handle(ActionEvent event) { bukvar.save(); }
             });
             btnDelete = new Button();
             btnDelete.setText("Обриши");
@@ -151,8 +168,9 @@ public class BukvarEditor extends Application {
                 String name = fieldNewName.getText();
                 if (name.length() > 0 && !bukvar.lessions.containsKey(name)) {
                     bukvar.lessions.put(name, new Lession(name));
-                    selectLession(name);
                     refreshLessions();
+                    selectLession(name);
+                    fieldNewName.setText("");
                 }
             });
             
@@ -170,11 +188,21 @@ public class BukvarEditor extends Application {
                 btnNewImage.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
                 btnNewImage.setTranslateX((GROUP_IMAGES_WIDTH - BTN_NEW_IMAGE_WIDTH) / 2);
                 btnNewImage.setTranslateY(DEFAULT_SPACING);
-                /*btnNewImage.setOnAction(new EventHandler<ActionEvent>() {
+                btnNewImage.setOnAction(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
+                        File file = fileChooser.showOpenDialog(primaryStage);
+                        if (file != null) {
+                            String fPath = file.toURI().toString();
+                            Image image = new Image(fPath, 200.0, 200.0, true, false);
+                            String imageType = fPath.substring(fPath.length() - 3);
+                            System.out.println(imageType);
+                            selectedLession.images.add(new ImgContainer(image, imageType, "А"));
+                            addImage(selectedLession.images.size() - 1);
+                            spImageList.setVvalue(1.0);
+                        }
                     }
-                });*/
+                });
             }
 
             Rectangle borderGroupImages = new Rectangle(1, 1, GROUP_IMAGES_WIDTH - 2, GROUP_IMAGES_HEIGHT - 2);
@@ -182,44 +210,7 @@ public class BukvarEditor extends Application {
             borderGroupImages.setStroke(Color.BLACK);
             
             groupImageList = new Group();
-            {
-                for (int i = 0; i < 3; i++) {
-                    Group groupImage = new Group();
-                    {
-                        Line topLine = new Line(0, 0, GROUP_IMAGE_LIST_WIDTH, 0);
-                        Rectangle rectImage = new Rectangle(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
-                        rectImage.setTranslateX(DEFAULT_SPACING);
-                        rectImage.setTranslateY(DEFAULT_SPACING);
-                        Button btnRemove = new Button("Уклони слику");
-                        btnRemove.setTranslateX(2 * DEFAULT_SPACING + IMAGE_WIDTH);
-                        btnRemove.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-                        btnRemove.setTranslateY(2 * DEFAULT_SPACING);
-                        TextField letter = new TextField("А");
-                        letter.setTranslateX(2 * DEFAULT_SPACING + IMAGE_WIDTH);
-                        letter.setTranslateY(3 * DEFAULT_SPACING + 2 * BTN_NEW_IMAGE_HEIGHT);
-                        letter.setMaxWidth(IMAGE_WIDTH / 2);
-                        letter.fontProperty().set(Font.font(STYLESHEET_CASPIAN, BTN_NEW_IMAGE_HEIGHT));
-                        letter.textProperty().addListener(new ChangeListener<String>() {
-                            @Override
-                            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                                if (letter.getText().length() > 0) {
-                                    String l = letter.getText().substring(0, 1).toUpperCase();
-                                    if (alphabet.contains(l)) {
-                                        letter.setText(l);
-                                    } else {
-                                        letter.setText("");
-                                    }
-                                    
-                                }
-                            }
-                        });
-                        Line bottomLine = new Line(0, 2 * DEFAULT_SPACING + IMAGE_HEIGHT, GROUP_IMAGE_LIST_WIDTH, 2 * DEFAULT_SPACING + IMAGE_HEIGHT);
-                        groupImage.getChildren().addAll(topLine, rectImage, btnRemove, letter, bottomLine);
-                        groupImage.setTranslateY(i * (2 * DEFAULT_SPACING + IMAGE_HEIGHT));
-                    }
-                    groupImageList.getChildren().add(groupImage);
-                }
-            }
+            
             spImageList = new ScrollPane(groupImageList);
             spImageList.setTranslateX(DEFAULT_SPACING);
             spImageList.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
@@ -317,6 +308,7 @@ public class BukvarEditor extends Application {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override public void run() { bukvar.save(); }
         });
+        btnNewImage.toFront();
     }
     
     private void refreshLessions() {
@@ -327,17 +319,71 @@ public class BukvarEditor extends Application {
     
     private void selectLession(String lessionName) {
         bukvar.save();
+        groupImageList.getChildren().clear();
         
         selectedLession = bukvar.lessions.get(lessionName);
         comboLessions.setValue(lessionName);
         
-        // Load images and assigned letters
+        
+        for (int i = 0; i < selectedLession.images.size(); i++) {
+            addImage(i);
+        }
         
         checkTimeIndef.setSelected(selectedLession.timeToPickImgsIndef);
         spinTime.getValueFactory().setValue(selectedLession.timeToPickImgsSecs);
         spinTime.setDisable(selectedLession.timeToPickImgsIndef);
         spinImgsToShow.getValueFactory().setValue(selectedLession.imgsToPresent);
         spinMinMatchingImgs.getValueFactory().setValue(selectedLession.minMatchingImgs);
+        
+        spImageList.setVvalue(rememberedScrollPane);
+        rememberedScrollPane = 0.0;
+    }
+    
+    private void addImage(int imageId) {
+        Group groupImage = new Group();
+        
+        Line topLine = new Line(0, 0, GROUP_IMAGE_LIST_WIDTH, 0);
+        Rectangle rectImage = new Rectangle(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+        rectImage.setTranslateX(DEFAULT_SPACING);
+        rectImage.setTranslateY(DEFAULT_SPACING);
+        rectImage.setFill(new ImagePattern(selectedLession.images.get(imageId).image));
+        Button btnRemove = new Button("Уклони слику");
+        btnRemove.setTranslateX(2 * DEFAULT_SPACING + IMAGE_WIDTH);
+        btnRemove.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+        btnRemove.setTranslateY(2 * DEFAULT_SPACING);
+        btnRemove.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                selectedLession.images.remove(imageId);
+                rememberedScrollPane = spImageList.getVvalue();
+                selectLession(selectedLession.name);
+            }
+        });
+        TextField letter = new TextField(selectedLession.images.get(imageId).letter);
+        letter.setTranslateX(2 * DEFAULT_SPACING + IMAGE_WIDTH);
+        letter.setTranslateY(3 * DEFAULT_SPACING + 2 * BTN_NEW_IMAGE_HEIGHT);
+        letter.setMaxWidth(IMAGE_WIDTH / 2);
+        letter.fontProperty().set(Font.font(STYLESHEET_CASPIAN, BTN_NEW_IMAGE_HEIGHT));
+        letter.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                System.out.println("asd");
+                if (letter.getText().length() > 0) {
+                    String l = letter.getText().substring(0, 1).toUpperCase();
+                    if (alphabet.contains(l)) { 
+                        letter.setText(l);
+                        selectedLession.images.get(imageId).letter = l;
+                        System.out.println(selectedLession.images.get(imageId).letter);
+                        System.out.println(imageId);
+                    } else { letter.setText(""); }
+                }
+            }
+        });
+        Line bottomLine = new Line(0, 2 * DEFAULT_SPACING + IMAGE_HEIGHT, GROUP_IMAGE_LIST_WIDTH, 2 * DEFAULT_SPACING + IMAGE_HEIGHT);
+        groupImage.getChildren().addAll(topLine, rectImage, btnRemove, letter, bottomLine);
+        groupImage.setTranslateY(imageId * (2 * DEFAULT_SPACING + IMAGE_HEIGHT));
+        
+        groupImageList.getChildren().add(groupImage);
     }
 
     /**
