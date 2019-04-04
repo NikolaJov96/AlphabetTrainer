@@ -114,7 +114,6 @@ public class BukvarEditor extends Application {
         
         @Override
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-            System.out.println("asd");
             if (fieldLetter.getText().length() > 0) {
                 String l = fieldLetter.getText().substring(0, 1).toUpperCase();
                 if (alphabet.contains(l)) { 
@@ -122,8 +121,6 @@ public class BukvarEditor extends Application {
                     fieldLetter.setText(l);
                     fieldLetter.textProperty().addListener(this);
                     selectedLession.images.get(imageId).letter = l;
-                    System.out.println(selectedLession.images.get(imageId).letter);
-                    System.out.println(imageId);
                 } else { 
                     fieldLetter.textProperty().removeListener(this);
                     fieldLetter.setText(""); 
@@ -230,7 +227,6 @@ public class BukvarEditor extends Application {
                             String fPath = file.toURI().toString();
                             Image image = loadImage(fPath);
                             String imageType = fPath.substring(fPath.length() - 3);
-                            System.out.println(imageType);
                             selectedLession.images.add(new ImgContainer(image, imageType, "А"));
                             addImage(selectedLession.images.size() - 1);
                             spImageList.setVvalue(1.0);
@@ -407,7 +403,6 @@ public class BukvarEditor extends Application {
                     String fPath = file.toURI().toString();
                     Image image = loadImage(fPath);
                     String imageType = fPath.substring(fPath.length() - 3);
-                    System.out.println(imageType);
                     selectedLession.images.get(imageId).image = image;
                     selectedLession.images.get(imageId).imgType = imageType;
                     rectImage.setWidth(image.getWidth());

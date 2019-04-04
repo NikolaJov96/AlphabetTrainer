@@ -36,7 +36,6 @@ public class ImgContainer implements Serializable {
 
     private void writeObject(ObjectOutputStream s) throws IOException {
         s.defaultWriteObject();
-        System.out.println(image.toString());
         ImageIO.write(SwingFXUtils.fromFXImage(image, null), imgType, s);
     }
     
