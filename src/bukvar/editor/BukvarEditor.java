@@ -101,6 +101,37 @@ public class BukvarEditor extends Application {
     private Bukvar bukvar;
     private Lession selectedLession;
     private double rememberedScrollPane = 0.0;
+    
+    class LetterChangeListener implements ChangeListener<String> {
+        
+        private TextField fieldLetter;
+        private int imageId;
+        
+        public LetterChangeListener(TextField fieldLetter, int imageId) {
+            this.fieldLetter = fieldLetter;
+            this.imageId = imageId;
+        }
+        
+        @Override
+        public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+            System.out.println("asd");
+            if (fieldLetter.getText().length() > 0) {
+                String l = fieldLetter.getText().substring(0, 1).toUpperCase();
+                if (alphabet.contains(l)) { 
+                    fieldLetter.textProperty().removeListener(this);
+                    fieldLetter.setText(l);
+                    fieldLetter.textProperty().addListener(this);
+                    selectedLession.images.get(imageId).letter = l;
+                    System.out.println(selectedLession.images.get(imageId).letter);
+                    System.out.println(imageId);
+                } else { 
+                    fieldLetter.textProperty().removeListener(this);
+                    fieldLetter.setText(""); 
+                    fieldLetter.textProperty().addListener(this);
+                }
+            }
+        }
+    }
             
     @Override
     public void start(Stage primaryStage) {
@@ -404,21 +435,7 @@ public class BukvarEditor extends Application {
         letter.setTranslateY(3 * DEFAULT_SPACING + 2 * BTN_NEW_IMAGE_HEIGHT);
         letter.setMaxWidth(IMAGE_WIDTH / 2);
         letter.fontProperty().set(Font.font(STYLESHEET_CASPIAN, BTN_NEW_IMAGE_HEIGHT));
-        letter.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                System.out.println("asd");
-                if (letter.getText().length() > 0) {
-                    String l = letter.getText().substring(0, 1).toUpperCase();
-                    if (alphabet.contains(l)) { 
-                        letter.setText(l);
-                        selectedLession.images.get(imageId).letter = l;
-                        System.out.println(selectedLession.images.get(imageId).letter);
-                        System.out.println(imageId);
-                    } else { letter.setText(""); }
-                }
-            }
-        });
+        letter.textProperty().addListener(new LetterChangeListener(letter, imageId));
         Line bottomLine = new Line(0, 2 * DEFAULT_SPACING + IMAGE_HEIGHT, GROUP_IMAGE_LIST_WIDTH, 2 * DEFAULT_SPACING + IMAGE_HEIGHT);
         groupImage.getChildren().addAll(topLine, rectImage, btnRemove, letter, bottomLine);
         groupImage.setTranslateY(imageId * (2 * DEFAULT_SPACING + IMAGE_HEIGHT));
