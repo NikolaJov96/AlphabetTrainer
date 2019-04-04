@@ -32,6 +32,7 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Line;
@@ -61,7 +62,7 @@ public class BukvarEditor extends Application {
     private static final int GROUP_IMAGE_LIST_WIDTH = GROUP_IMAGES_WIDTH - 2 * DEFAULT_SPACING;
     private static final int GROUP_IMAGE_LIST_HEIGHT = GROUP_IMAGES_HEIGHT - 3 * DEFAULT_SPACING - BTN_NEW_IMAGE_HEIGHT;
     private static final int IMAGE_WIDTH = 200;
-    private static final int IMAGE_HEIGHT = 200;
+    private static final int IMAGE_HEIGHT = IMAGE_WIDTH;
     
     private static final int GROUP_PARAMETERS_WIDTH = 600;
     private static final int GROUP_PARAMETERS_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT;
@@ -72,6 +73,7 @@ public class BukvarEditor extends Application {
             "Н", "Њ", "О", "П", "Р", "С", "Т", "Ћ", "У", "Ф", "Х", "Ц", "Ч", "Џ", "Ш"
     ));
     
+    private Stage stage;
     private Scene scene;
     private Group root;
     
@@ -102,6 +104,7 @@ public class BukvarEditor extends Application {
             
     @Override
     public void start(Stage primaryStage) {
+        stage = primaryStage;
         bukvar = Bukvar.getBukvar();
         fileChooser = new FileChooser();
         fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter(
@@ -194,7 +197,7 @@ public class BukvarEditor extends Application {
                         File file = fileChooser.showOpenDialog(primaryStage);
                         if (file != null) {
                             String fPath = file.toURI().toString();
-                            Image image = new Image(fPath, 200.0, 200.0, true, false);
+                            Image image = loadImage(fPath);
                             String imageType = fPath.substring(fPath.length() - 3);
                             System.out.println(imageType);
                             selectedLession.images.add(new ImgContainer(image, imageType, "А"));
@@ -339,14 +342,51 @@ public class BukvarEditor extends Application {
         rememberedScrollPane = 0.0;
     }
     
+    private Image loadImage(String path) {
+        Image image = new Image(path);
+        if (image.isError()) { return null; }
+        
+        double scale = 1.0;
+        double w = image.getWidth();
+        double h = image.getHeight();
+        if (w > h) {
+            scale = IMAGE_WIDTH / w;
+        } else {
+            scale = IMAGE_HEIGHT / h;
+        }
+        image = new Image(path, w * scale, h * scale, true, false);
+        return image;
+    }
+    
     private void addImage(int imageId) {
         Group groupImage = new Group();
         
         Line topLine = new Line(0, 0, GROUP_IMAGE_LIST_WIDTH, 0);
-        Rectangle rectImage = new Rectangle(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
-        rectImage.setTranslateX(DEFAULT_SPACING);
-        rectImage.setTranslateY(DEFAULT_SPACING);
-        rectImage.setFill(new ImagePattern(selectedLession.images.get(imageId).image));
+        Image image = selectedLession.images.get(imageId).image;
+        Rectangle rectImage = new Rectangle(0, 0, image.getWidth(), image.getHeight());
+        rectImage.setTranslateX(DEFAULT_SPACING + (IMAGE_WIDTH - image.getWidth()) / 2);
+        rectImage.setTranslateY(DEFAULT_SPACING + (IMAGE_HEIGHT - image.getHeight()) / 2);
+        rectImage.setFill(new ImagePattern(image));
+        rectImage.setOnMouseClicked(new EventHandler<MouseEvent>()
+        {
+            @Override
+            public void handle(MouseEvent t) {
+                File file = fileChooser.showOpenDialog(stage);
+                if (file != null) {
+                    String fPath = file.toURI().toString();
+                    Image image = loadImage(fPath);
+                    String imageType = fPath.substring(fPath.length() - 3);
+                    System.out.println(imageType);
+                    selectedLession.images.get(imageId).image = image;
+                    selectedLession.images.get(imageId).imgType = imageType;
+                    rectImage.setWidth(image.getWidth());
+                    rectImage.setHeight(image.getHeight());
+                    rectImage.setTranslateX(DEFAULT_SPACING + (IMAGE_WIDTH - image.getWidth()) / 2);
+                    rectImage.setTranslateY(DEFAULT_SPACING + (IMAGE_HEIGHT - image.getHeight()) / 2);
+                    rectImage.setFill(new ImagePattern(image));
+                }
+            }
+        });
         Button btnRemove = new Button("Уклони слику");
         btnRemove.setTranslateX(2 * DEFAULT_SPACING + IMAGE_WIDTH);
         btnRemove.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
