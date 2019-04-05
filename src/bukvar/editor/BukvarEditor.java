@@ -13,13 +13,17 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
@@ -35,6 +39,7 @@ import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
@@ -49,14 +54,19 @@ import javafx.stage.Stage;
 public class BukvarEditor extends Application {
     
     private static final int WINDOW_WIDTH = 1000;
-    private static final int WINDOW_HEIGHT = 800;
+    private static final int WINDOW_HEIGHT = 1000;
     private static final int DEFAULT_SPACING = 10;
     
     private static final int GROUP_HEADER_WIDTH = WINDOW_WIDTH;
     private static final int GROUP_HEADER_HEIGHT = 80;
     
+    private static final int GROUP_TABLE_WIDTH = WINDOW_WIDTH;
+    private static final int GROUP_TABLE_HEIGHT = 200;
+    private static final int CANVAS_WIDTH = GROUP_TABLE_WIDTH - 2 * DEFAULT_SPACING;
+    private static final int CANVAS_HEIGHT = 120;
+    
     private static final int GROUP_IMAGES_WIDTH = 400;
-    private static final int GROUP_IMAGES_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT;
+    private static final int GROUP_IMAGES_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT;
     private static final int BTN_NEW_IMAGE_WIDTH = 150;
     private static final int BTN_NEW_IMAGE_HEIGHT = 40;
     private static final int GROUP_IMAGE_LIST_WIDTH = GROUP_IMAGES_WIDTH - 2 * DEFAULT_SPACING;
@@ -65,13 +75,19 @@ public class BukvarEditor extends Application {
     private static final int IMAGE_HEIGHT = IMAGE_WIDTH;
     
     private static final int GROUP_PARAMETERS_WIDTH = 600;
-    private static final int GROUP_PARAMETERS_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT;
+    private static final int GROUP_PARAMETERS_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT;
     private static final int GROUP_PARAM_1_HEIGHT = 80;
     
     private static final Set<String> alphabet = new HashSet<>(Arrays.asList(
             "А", "Б", "В", "Г", "Д", "Ђ", "Е"," Ж", "З", "И", "Ј", "К", "Л", "Љ", "М", 
             "Н", "Њ", "О", "П", "Р", "С", "Т", "Ћ", "У", "Ф", "Х", "Ц", "Ч", "Џ", "Ш"
     ));
+    
+    private static final Map<String, Color> colors = new HashMap<String, Color>(){{
+        put("Red", Color.RED);
+        put("Green", Color.GREEN);
+        put("Blue", Color.BLUE);
+    }};
     
     private Stage stage;
     private Scene scene;
@@ -84,6 +100,12 @@ public class BukvarEditor extends Application {
     private Button btnDefault;
     private TextField fieldNewName;
     private Button btnNewLession;
+    
+    private Group groupTable;
+    private Spinner<String> spinColor;
+    private Spinner<Integer> spinTick;
+    private TextField fieldDrawLetter;
+    private Group groupCanvas;
     
     private Group groupImages;
     private Button btnNewImage;
@@ -208,9 +230,48 @@ public class BukvarEditor extends Application {
             groupHeader.getChildren().addAll(border, comboLessions, btnSave, btnDelete, btnDefault, fieldNewName, btnNewLession);
         }
         
+        groupTable = new Group();
+        {
+            groupTable.setTranslateY(GROUP_HEADER_HEIGHT);
+            
+            Rectangle border = new Rectangle(1, 1, GROUP_TABLE_WIDTH - 2, GROUP_TABLE_HEIGHT - 2);
+            border.setFill(Color.TRANSPARENT);
+            border.setStroke(Color.BLACK);
+            Text text1 = new Text(DEFAULT_SPACING, 3.5 * DEFAULT_SPACING, "Боја: ");
+            ObservableList<String> obsColors = FXCollections.observableArrayList(colors.keySet());
+            spinColor = new Spinner(obsColors);
+            spinColor.setTranslateX(60);
+            spinColor.setTranslateY(DEFAULT_SPACING);
+            spinColor.setMaxWidth(120);
+            spinColor.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+            spinTick = new Spinner(1, 5, 3);
+            Text text2 = new Text(260, 3.5 * DEFAULT_SPACING, "Дебљина линије: ");
+            spinTick.setTranslateX(400);
+            spinTick.setTranslateY(DEFAULT_SPACING);
+            spinTick.setMaxWidth(120);
+            spinTick.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+            Text text3 = new Text(680, 3.5 * DEFAULT_SPACING, "Ново слово: ");
+            fieldDrawLetter = new TextField();
+            fieldDrawLetter.setTranslateX(780);
+            fieldDrawLetter.setTranslateY(DEFAULT_SPACING);
+            fieldDrawLetter.setMaxWidth(120);
+            fieldDrawLetter.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+            fieldDrawLetter.textProperty().addListener((observable, oldValue, newValue) -> {
+                // set selectd letter
+            });
+            groupCanvas = new Group();
+            groupCanvas.setTranslateX(DEFAULT_SPACING);
+            groupCanvas.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
+            Rectangle borderCanv = new Rectangle(DEFAULT_SPACING, 2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT, CANVAS_WIDTH - 2, CANVAS_HEIGHT - 2);
+            borderCanv.setFill(Color.TRANSPARENT);
+            borderCanv.setStroke(Color.BLACK);
+            
+            groupTable.getChildren().addAll(border, text1, spinColor, text2, spinTick, text3, fieldDrawLetter, borderCanv, groupCanvas);
+        }
+        
         groupImages = new Group();
         {
-            groupImages.setTranslateY(GROUP_HEADER_HEIGHT);
+            groupImages.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT);
             
             btnNewImage = new Button();
             {
@@ -254,7 +315,7 @@ public class BukvarEditor extends Application {
         groupParams = new Group();
         {
             groupParams.setTranslateX(GROUP_IMAGES_WIDTH);
-            groupParams.setTranslateY(GROUP_HEADER_HEIGHT);
+            groupParams.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT);
             
             Rectangle borderGroupParams = new Rectangle(1, 1, GROUP_PARAMETERS_WIDTH - 2, GROUP_PARAMETERS_HEIGHT - 2);
             borderGroupParams.setFill(Color.TRANSPARENT);
@@ -324,7 +385,7 @@ public class BukvarEditor extends Application {
         }
         
         root = new Group();
-        root.getChildren().addAll(groupHeader, groupImages, groupParams);
+        root.getChildren().addAll(groupHeader, groupTable, groupImages, groupParams);
         scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         
         selectLession(bukvar.defaultLessionName);
