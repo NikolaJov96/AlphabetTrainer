@@ -9,17 +9,13 @@ import bukvar.structs.Bukvar;
 import bukvar.structs.ImgContainer;
 import bukvar.structs.Lession;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -28,6 +24,8 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -36,10 +34,10 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
@@ -106,6 +104,8 @@ public class BukvarEditor extends Application {
     private Spinner<Integer> spinTick;
     private TextField fieldDrawLetter;
     private Group groupCanvas;
+    private DrawableCanvas canvas;
+    private String selectedLetter;
     
     private Group groupImages;
     private Button btnNewImage;
@@ -151,11 +151,35 @@ public class BukvarEditor extends Application {
             }
         }
     }
+    
+    class DrawableCanvas extends Canvas {
+        public DrawableCanvas(double width, double height) {
+            super(width, height);
+            final GraphicsContext gc = getGraphicsContext2D();
+            gc.setFill(Color.WHITE);
+            gc.setStroke(colors.get(spinColor.getValue()));
+            gc.setLineWidth(spinTick.getValue());
+            addEventHandler(MouseEvent.MOUSE_PRESSED, new EventHandler<MouseEvent>(){
+                @Override
+                public void handle(MouseEvent event) {
+                    gc.beginPath(); gc.moveTo(event.getX(), event.getY()); gc.stroke();
+                }
+            });
+            addEventHandler(MouseEvent.MOUSE_DRAGGED, new EventHandler<MouseEvent>(){
+                @Override
+                public void handle(MouseEvent event) {
+                    gc.lineTo(event.getX(), event.getY()); gc.stroke();
+                }
+            });
+            addEventHandler(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>(){
+                @Override public void handle(MouseEvent event) {}
+            });
+        }
+    }
             
     @Override
     public void start(Stage primaryStage) {
         stage = primaryStage;
-        bukvar = Bukvar.getBukvar();
         fileChooser = new FileChooser();
         fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter(
                 "Images", "jpg", "png", "gif", "bmp"
@@ -175,7 +199,7 @@ public class BukvarEditor extends Application {
             comboLessions.valueProperty().addListener(new ChangeListener<String>() {
                 @Override 
                 public void changed(ObservableValue ov, String t, String t1) { 
-                    if (t1 != null) { selectLession(t1); }
+                    if (t1 != null) { saveBukvar(t1); }
                 }
             });
             btnSave = new Button();
@@ -185,7 +209,7 @@ public class BukvarEditor extends Application {
             btnSave.setTranslateX(230);
             btnSave.setTranslateY(2 * DEFAULT_SPACING);
             btnSave.setOnAction(new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent event) { bukvar.save(); }
+                @Override public void handle(ActionEvent event) { saveBukvar(null); }
             });
             btnDelete = new Button();
             btnDelete.setText("Обриши");
@@ -220,7 +244,7 @@ public class BukvarEditor extends Application {
             btnNewLession.setOnAction((ActionEvent event) -> {
                 String name = fieldNewName.getText();
                 if (name.length() > 0 && !bukvar.lessions.containsKey(name)) {
-                    bukvar.lessions.put(name, new Lession(name));
+                    bukvar.lessions.put(name, new Lession(name, blankTable()));
                     refreshLessions();
                     selectLession(name);
                     fieldNewName.setText("");
@@ -244,12 +268,18 @@ public class BukvarEditor extends Application {
             spinColor.setTranslateY(DEFAULT_SPACING);
             spinColor.setMaxWidth(120);
             spinColor.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-            spinTick = new Spinner(1, 5, 3);
+            spinColor.valueProperty().addListener((ov, t, t1) -> {
+                if (canvas != null) { canvas.getGraphicsContext2D().setStroke(colors.get(t1)); }
+            });
             Text text2 = new Text(260, 3.5 * DEFAULT_SPACING, "Дебљина линије: ");
+            spinTick = new Spinner(1, 5, 3);
             spinTick.setTranslateX(400);
             spinTick.setTranslateY(DEFAULT_SPACING);
             spinTick.setMaxWidth(120);
             spinTick.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+            spinTick.valueProperty().addListener((ov, t, t1) -> {
+                if (canvas != null) { canvas.getGraphicsContext2D().setLineWidth(t1); }
+            });
             Text text3 = new Text(680, 3.5 * DEFAULT_SPACING, "Ново слово: ");
             fieldDrawLetter = new TextField();
             fieldDrawLetter.setTranslateX(780);
@@ -257,12 +287,14 @@ public class BukvarEditor extends Application {
             fieldDrawLetter.setMaxWidth(120);
             fieldDrawLetter.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             fieldDrawLetter.textProperty().addListener((observable, oldValue, newValue) -> {
-                // set selectd letter
+                selectedLetter = newValue;
             });
             groupCanvas = new Group();
             groupCanvas.setTranslateX(DEFAULT_SPACING);
             groupCanvas.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
-            Rectangle borderCanv = new Rectangle(DEFAULT_SPACING, 2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT, CANVAS_WIDTH - 2, CANVAS_HEIGHT - 2);
+            canvas = new DrawableCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+            groupCanvas.getChildren().add(canvas);
+            Rectangle borderCanv = new Rectangle(DEFAULT_SPACING - 1, 2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT - 1, CANVAS_WIDTH + 2, CANVAS_HEIGHT + 2);
             borderCanv.setFill(Color.TRANSPARENT);
             borderCanv.setStroke(Color.BLACK);
             
@@ -388,6 +420,7 @@ public class BukvarEditor extends Application {
         root.getChildren().addAll(groupHeader, groupTable, groupImages, groupParams);
         scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         
+        bukvar = Bukvar.getBukvar(blankTable());
         selectLession(bukvar.defaultLessionName);
         refreshLessions();
         
@@ -397,7 +430,7 @@ public class BukvarEditor extends Application {
         primaryStage.show();
         
         Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override public void run() { bukvar.save(); }
+            @Override public void run() { saveBukvar(null); }
         });
         btnNewImage.toFront();
     }
@@ -409,12 +442,13 @@ public class BukvarEditor extends Application {
     }
     
     private void selectLession(String lessionName) {
-        bukvar.save();
+        saveBukvar(null);
         groupImageList.getChildren().clear();
         
         selectedLession = bukvar.lessions.get(lessionName);
         comboLessions.setValue(lessionName);
         
+        canvas.getGraphicsContext2D().drawImage(selectedLession.table, 0, 0);
         
         for (int i = 0; i < selectedLession.images.size(); i++) {
             addImage(i);
@@ -497,6 +531,32 @@ public class BukvarEditor extends Application {
         groupImage.setTranslateY(imageId * (2 * DEFAULT_SPACING + IMAGE_HEIGHT));
         
         groupImageList.getChildren().add(groupImage);
+    }
+    
+    private Image blankTable() {
+        WritableImage wim = new WritableImage(CANVAS_WIDTH, CANVAS_HEIGHT);
+        DrawableCanvas canvas = new DrawableCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        canvas.snapshot(null, wim);
+        return wim;
+    }
+    
+    private void saveBukvar(String nextLession) {
+        if (selectedLession == null) {
+            return;
+        }
+        WritableImage wim = new WritableImage(CANVAS_WIDTH, CANVAS_HEIGHT);
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                canvas.snapshot(null, wim);
+                selectedLession.table = wim;
+                bukvar.save();
+                if (nextLession != null) {
+                    selectLession(nextLession);
+                }
+            }
+        });
     }
 
     /**

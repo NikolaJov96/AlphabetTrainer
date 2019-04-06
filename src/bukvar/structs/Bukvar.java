@@ -6,15 +6,13 @@
 package bukvar.structs;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javafx.scene.image.Image;
 
 /**
  *
@@ -28,7 +26,7 @@ public class Bukvar implements Serializable {
     public HashMap<String, Lession> lessions;
     public String defaultLessionName;
     
-    public static Bukvar getBukvar() {
+    public static Bukvar getBukvar(Image table) {
         ObjectInputStream ois = null;
         Bukvar bukvar;
         try {
@@ -37,16 +35,17 @@ public class Bukvar implements Serializable {
             bukvar = (Bukvar)ois.readObject();
         } catch (Exception e) {
             System.out.println("Data file not found.");
-            bukvar = new Bukvar();
+            bukvar = new Bukvar(table);
         } finally {
             try { ois.close(); } catch (Exception e) {} 
         }
         return bukvar;
     }
 
-    private Bukvar() {this.lessions = new HashMap<>();
+    private Bukvar(Image table) {
+        this.lessions = new HashMap<>();
         this.defaultLessionName = frstLessionName;
-        this.lessions.put(frstLessionName, new Lession(frstLessionName));
+        this.lessions.put(frstLessionName, new Lession(frstLessionName, table));
     }
     
     public void save() {
