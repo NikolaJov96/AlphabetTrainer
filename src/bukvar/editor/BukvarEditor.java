@@ -21,7 +21,9 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -62,6 +64,7 @@ public class BukvarEditor extends Application {
     private static final int GROUP_TABLE_HEIGHT = 200;
     private static final int CANVAS_WIDTH = GROUP_TABLE_WIDTH - 2 * DEFAULT_SPACING;
     private static final int CANVAS_HEIGHT = 120;
+    private static final int ERASER = 5;
     
     private static final int GROUP_IMAGES_WIDTH = 400;
     private static final int GROUP_IMAGES_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT;
@@ -100,12 +103,13 @@ public class BukvarEditor extends Application {
     private Button btnNewLession;
     
     private Group groupTable;
-    private Spinner<String> spinColor;
+    private ComboBox<String> comboColor;
     private Spinner<Integer> spinTick;
-    private TextField fieldDrawLetter;
+    private CheckBox checkStraightLine;
+    private CheckBox checkEraser;
     private Group groupCanvas;
     private DrawableCanvas canvas;
-    private String selectedLetter;
+    private Line tempLine;
     
     private Group groupImages;
     private Button btnNewImage;
@@ -157,22 +161,56 @@ public class BukvarEditor extends Application {
             super(width, height);
             final GraphicsContext gc = getGraphicsContext2D();
             gc.setFill(Color.WHITE);
-            gc.setStroke(colors.get(spinColor.getValue()));
+            gc.setStroke(colors.get(comboColor.getValue()));
             gc.setLineWidth(spinTick.getValue());
             addEventHandler(MouseEvent.MOUSE_PRESSED, new EventHandler<MouseEvent>(){
                 @Override
                 public void handle(MouseEvent event) {
-                    gc.beginPath(); gc.moveTo(event.getX(), event.getY()); gc.stroke();
+                    if (checkStraightLine.isSelected()) {
+                        gc.setStroke(colors.get(comboColor.getValue()));
+                        tempLine.setStartX(event.getX());
+                        tempLine.setStartY(event.getY());
+                        tempLine.setEndX(event.getX());
+                        tempLine.setEndY(event.getY());
+                        tempLine.setStroke(colors.get(comboColor.getValue()));
+                    } else if (checkEraser.isSelected()) {
+                        gc.setStroke(Color.WHITE);
+                        int width = ERASER * spinTick.getValue();
+                        gc.fillRect(event.getX() - width / 2, event.getY() - width / 2, width, width); gc.stroke();
+                    } else {
+                        gc.setStroke(colors.get(comboColor.getValue()));
+                        gc.beginPath(); gc.moveTo(event.getX(), event.getY()); gc.stroke();
+                    }
                 }
             });
             addEventHandler(MouseEvent.MOUSE_DRAGGED, new EventHandler<MouseEvent>(){
                 @Override
                 public void handle(MouseEvent event) {
-                    gc.lineTo(event.getX(), event.getY()); gc.stroke();
+                    if (checkStraightLine.isSelected()) {
+                        tempLine.setEndX(event.getX());
+                        tempLine.setEndY(event.getY());
+                    } else if (checkEraser.isSelected()) {
+                        int width = ERASER * spinTick.getValue();
+                        gc.rect(event.getX() - width / 2, event.getY() - width / 2, width, width); gc.stroke();
+                    } else {
+                        gc.lineTo(event.getX(), event.getY()); gc.stroke();
+                    }
                 }
             });
             addEventHandler(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>(){
-                @Override public void handle(MouseEvent event) {}
+                @Override
+                public void handle(MouseEvent event) {
+                    if (checkStraightLine.isSelected()) {
+                        gc.beginPath(); gc.moveTo(tempLine.getStartX(), tempLine.getStartY()); gc.stroke();
+                        gc.lineTo(event.getX(), event.getY()); gc.stroke();
+                        tempLine.setStartX(0);
+                        tempLine.setStartY(0);
+                        tempLine.setEndX(0);
+                        tempLine.setEndY(0);
+                    } else if (checkEraser.isSelected()) {
+                        gc.setStroke(colors.get(comboColor.getValue()));
+                    }
+                }
             });
         }
     }
@@ -263,12 +301,13 @@ public class BukvarEditor extends Application {
             border.setStroke(Color.BLACK);
             Text text1 = new Text(DEFAULT_SPACING, 3.5 * DEFAULT_SPACING, "Боја: ");
             ObservableList<String> obsColors = FXCollections.observableArrayList(colors.keySet());
-            spinColor = new Spinner(obsColors);
-            spinColor.setTranslateX(60);
-            spinColor.setTranslateY(DEFAULT_SPACING);
-            spinColor.setMaxWidth(120);
-            spinColor.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-            spinColor.valueProperty().addListener((ov, t, t1) -> {
+            comboColor = new ComboBox<>(obsColors);
+            comboColor.setValue(colors.keySet().iterator().next());
+            comboColor.setTranslateX(60);
+            comboColor.setTranslateY(DEFAULT_SPACING);
+            comboColor.setMinWidth(170);
+            comboColor.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+            comboColor.valueProperty().addListener((ov, t, t1) -> {
                 if (canvas != null) { canvas.getGraphicsContext2D().setStroke(colors.get(t1)); }
             });
             Text text2 = new Text(260, 3.5 * DEFAULT_SPACING, "Дебљина линије: ");
@@ -280,25 +319,35 @@ public class BukvarEditor extends Application {
             spinTick.valueProperty().addListener((ov, t, t1) -> {
                 if (canvas != null) { canvas.getGraphicsContext2D().setLineWidth(t1); }
             });
-            Text text3 = new Text(680, 3.5 * DEFAULT_SPACING, "Ново слово: ");
-            fieldDrawLetter = new TextField();
-            fieldDrawLetter.setTranslateX(780);
-            fieldDrawLetter.setTranslateY(DEFAULT_SPACING);
-            fieldDrawLetter.setMaxWidth(120);
-            fieldDrawLetter.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-            fieldDrawLetter.textProperty().addListener((observable, oldValue, newValue) -> {
-                selectedLetter = newValue;
+            checkStraightLine = new CheckBox("Права линија");
+            checkStraightLine.setTranslateX(600);
+            checkStraightLine.setTranslateY(2 * DEFAULT_SPACING);
+            checkStraightLine.setOnAction(new EventHandler<ActionEvent>() {
+                @Override public void handle(ActionEvent event) {
+                    if (checkStraightLine.isSelected()) { checkEraser.setSelected(false); }
+                }
+            });
+            checkEraser = new CheckBox("Гумица");
+            checkEraser.setTranslateX(750);
+            checkEraser.setTranslateY(2 * DEFAULT_SPACING);
+            checkEraser.setOnAction(new EventHandler<ActionEvent>() {
+                @Override public void handle(ActionEvent event) {
+                    if (checkEraser.isSelected()) { checkStraightLine.setSelected(false); }
+                }
             });
             groupCanvas = new Group();
             groupCanvas.setTranslateX(DEFAULT_SPACING);
             groupCanvas.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
             canvas = new DrawableCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
             groupCanvas.getChildren().add(canvas);
+            tempLine = new Line(0, 0, 0, 0);
+            tempLine.setTranslateX(DEFAULT_SPACING);
+            tempLine.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
             Rectangle borderCanv = new Rectangle(DEFAULT_SPACING - 1, 2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT - 1, CANVAS_WIDTH + 2, CANVAS_HEIGHT + 2);
             borderCanv.setFill(Color.TRANSPARENT);
             borderCanv.setStroke(Color.BLACK);
             
-            groupTable.getChildren().addAll(border, text1, spinColor, text2, spinTick, text3, fieldDrawLetter, borderCanv, groupCanvas);
+            groupTable.getChildren().addAll(border, text1, comboColor, text2, spinTick, checkStraightLine, checkEraser, borderCanv, groupCanvas, tempLine);
         }
         
         groupImages = new Group();
