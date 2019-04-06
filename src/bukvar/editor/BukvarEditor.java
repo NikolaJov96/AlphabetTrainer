@@ -54,7 +54,7 @@ import javafx.stage.Stage;
 public class BukvarEditor extends Application {
     
     private static final int WINDOW_WIDTH = 1000;
-    private static final int WINDOW_HEIGHT = 1000;
+    private static final int WINDOW_HEIGHT = 730;
     private static final int DEFAULT_SPACING = 10;
     
     private static final int GROUP_HEADER_WIDTH = WINDOW_WIDTH;
@@ -66,18 +66,20 @@ public class BukvarEditor extends Application {
     private static final int CANVAS_HEIGHT = 120;
     private static final int ERASER = 5;
     
-    private static final int GROUP_IMAGES_WIDTH = 400;
-    private static final int GROUP_IMAGES_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT;
+    private static final int GROUP_PARAMETERS_WIDTH = WINDOW_WIDTH;
+    private static final int PARAM_SPIN_WIDTH = 100;
+    private static final int GROUP_PARAM_1_HEIGHT = 80;
+    private static final int GROUP_PARAM_1_WIDTH = (GROUP_PARAMETERS_WIDTH - 4 * DEFAULT_SPACING) / 3;
+    private static final int GROUP_PARAMETERS_HEIGHT = 2 * DEFAULT_SPACING + GROUP_PARAM_1_HEIGHT;
+    
+    private static final int GROUP_IMAGES_WIDTH = WINDOW_WIDTH;
+    private static final int GROUP_IMAGES_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT - GROUP_PARAMETERS_HEIGHT + DEFAULT_SPACING;
     private static final int BTN_NEW_IMAGE_WIDTH = 150;
     private static final int BTN_NEW_IMAGE_HEIGHT = 40;
     private static final int GROUP_IMAGE_LIST_WIDTH = GROUP_IMAGES_WIDTH - 2 * DEFAULT_SPACING;
     private static final int GROUP_IMAGE_LIST_HEIGHT = GROUP_IMAGES_HEIGHT - 3 * DEFAULT_SPACING - BTN_NEW_IMAGE_HEIGHT;
     private static final int IMAGE_WIDTH = 200;
     private static final int IMAGE_HEIGHT = IMAGE_WIDTH;
-    
-    private static final int GROUP_PARAMETERS_WIDTH = 600;
-    private static final int GROUP_PARAMETERS_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT;
-    private static final int GROUP_PARAM_1_HEIGHT = 80;
     
     private static final Set<String> alphabet = new HashSet<>(Arrays.asList(
             "А", "Б", "В", "Г", "Д", "Ђ", "Е"," Ж", "З", "И", "Ј", "К", "Л", "Љ", "М", 
@@ -110,17 +112,17 @@ public class BukvarEditor extends Application {
     private Group groupCanvas;
     private DrawableCanvas canvas;
     private Line tempLine;
-    
-    private Group groupImages;
-    private Button btnNewImage;
-    private Group groupImageList;
-    private ScrollPane spImageList;
      
     private Group groupParams;
     private CheckBox checkTimeIndef;
     private Spinner<Integer> spinTime;
     private Spinner<Integer> spinImgsToShow;
     private Spinner<Integer> spinMinMatchingImgs;
+    
+    private Group groupImages;
+    private Button btnNewImage;
+    private Group groupImageList;
+    private ScrollPane spImageList;
     
     private FileChooser fileChooser;
     
@@ -350,9 +352,83 @@ public class BukvarEditor extends Application {
             groupTable.getChildren().addAll(border, text1, comboColor, text2, spinTick, checkStraightLine, checkEraser, borderCanv, groupCanvas, tempLine);
         }
         
+        groupParams = new Group();
+        {
+            groupParams.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT);
+            
+            Rectangle borderGroupParams = new Rectangle(1, 1, GROUP_PARAMETERS_WIDTH - 2, GROUP_PARAMETERS_HEIGHT - 2);
+            borderGroupParams.setFill(Color.TRANSPARENT);
+            borderGroupParams.setStroke(Color.BLACK);
+            
+            Group groupParam1 = new Group();
+            {
+                groupParam1.setTranslateX(DEFAULT_SPACING);
+                groupParam1.setTranslateY(DEFAULT_SPACING);
+                Rectangle border = new Rectangle(1, 1, GROUP_PARAM_1_WIDTH - 2, GROUP_PARAM_1_HEIGHT - 2);
+                border.setFill(Color.TRANSPARENT);
+                border.setStroke(Color.BLACK);
+                Text text = new Text(DEFAULT_SPACING, 2 * DEFAULT_SPACING, "Време за одабир слика у секундама: ");
+                checkTimeIndef = new CheckBox("Неограничено");
+                checkTimeIndef.setTranslateX(DEFAULT_SPACING);
+                checkTimeIndef.setTranslateY(4 * DEFAULT_SPACING);
+                checkTimeIndef.setOnAction(new EventHandler<ActionEvent>() {
+                    @Override
+                    public void handle(ActionEvent event) {
+                        spinTime.setDisable(checkTimeIndef.isSelected());
+                        selectedLession.timeToPickImgsIndef = checkTimeIndef.isSelected();
+                    }
+                });
+                spinTime = new Spinner<>(5, 20, 5);
+                spinTime.setTranslateX(170);
+                spinTime.setTranslateY(4 * DEFAULT_SPACING);
+                spinTime.setMaxWidth(PARAM_SPIN_WIDTH);
+                spinTime.valueProperty().addListener((ov, t, t1) -> { selectedLession.timeToPickImgsSecs = t1; });
+                
+                groupParam1.getChildren().addAll(border, text, checkTimeIndef, spinTime);
+            }
+            
+            Group groupParam2 = new Group();
+            {
+                groupParam2.setTranslateX(2 * DEFAULT_SPACING + GROUP_PARAM_1_WIDTH);
+                groupParam2.setTranslateY(DEFAULT_SPACING);
+                Rectangle border = new Rectangle(1, 1, GROUP_PARAM_1_WIDTH - 2, GROUP_PARAM_1_HEIGHT - 2);
+                border.setFill(Color.TRANSPARENT);
+                border.setStroke(Color.BLACK);
+                Text text = new Text(DEFAULT_SPACING, 2 * DEFAULT_SPACING, "Број понуђених слика: ");
+                spinImgsToShow = new Spinner<>(4, 10, 1);
+                spinImgsToShow.setTranslateX(DEFAULT_SPACING);
+                spinImgsToShow.setTranslateY(4 * DEFAULT_SPACING);
+                spinImgsToShow.setMaxWidth(PARAM_SPIN_WIDTH);
+                spinImgsToShow.valueProperty().addListener((ov, t, t1) -> {
+                    IntegerSpinnerValueFactory isvf = (IntegerSpinnerValueFactory)spinMinMatchingImgs.getValueFactory();
+                    isvf.setMax(t1 - 1);
+                    selectedLession.imgsToPresent = t1;
+                });
+                groupParam2.getChildren().addAll(border, text, spinImgsToShow);
+            }
+            
+            Group groupParam3 = new Group();
+            {
+                groupParam3.setTranslateX(3 * DEFAULT_SPACING + 2 * GROUP_PARAM_1_WIDTH);
+                groupParam3.setTranslateY(DEFAULT_SPACING);
+                Rectangle border = new Rectangle(1, 1, GROUP_PARAM_1_WIDTH - 2, GROUP_PARAM_1_HEIGHT - 2);
+                border.setFill(Color.TRANSPARENT);
+                border.setStroke(Color.BLACK);
+                Text text = new Text(DEFAULT_SPACING, 2 * DEFAULT_SPACING, "Минимални број коректних слика: ");
+                spinMinMatchingImgs = new Spinner<>(0, 3, 1);
+                spinMinMatchingImgs.setTranslateX(DEFAULT_SPACING);
+                spinMinMatchingImgs.setTranslateY(4 * DEFAULT_SPACING);
+                spinMinMatchingImgs.setMaxWidth(PARAM_SPIN_WIDTH);
+                spinMinMatchingImgs.valueProperty().addListener((ov, t, t1) -> { selectedLession.minMatchingImgs = t1; });
+                groupParam3.getChildren().addAll(border, text, spinMinMatchingImgs);
+            }
+            
+            groupParams.getChildren().addAll(borderGroupParams, groupParam1, groupParam2, groupParam3);
+        }
+        
         groupImages = new Group();
         {
-            groupImages.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT);
+            groupImages.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT + GROUP_PARAMETERS_HEIGHT);
             
             btnNewImage = new Button();
             {
@@ -371,7 +447,7 @@ public class BukvarEditor extends Application {
                             String imageType = fPath.substring(fPath.length() - 3);
                             selectedLession.images.add(new ImgContainer(image, imageType, "А"));
                             addImage(selectedLession.images.size() - 1);
-                            spImageList.setVvalue(1.0);
+                            spImageList.setHvalue(1.0);
                         }
                     }
                 });
@@ -387,82 +463,10 @@ public class BukvarEditor extends Application {
             spImageList.setTranslateX(DEFAULT_SPACING);
             spImageList.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
             spImageList.setMaxHeight(GROUP_IMAGE_LIST_HEIGHT);
-            spImageList.setMinWidth(GROUP_IMAGE_LIST_WIDTH);
-            spImageList.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            spImageList.setMinHeight(GROUP_IMAGE_LIST_HEIGHT);
+            spImageList.setMaxWidth(GROUP_IMAGE_LIST_WIDTH);
 
             groupImages.getChildren().addAll(btnNewImage, borderGroupImages, spImageList);
-        }
-        
-        groupParams = new Group();
-        {
-            groupParams.setTranslateX(GROUP_IMAGES_WIDTH);
-            groupParams.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT);
-            
-            Rectangle borderGroupParams = new Rectangle(1, 1, GROUP_PARAMETERS_WIDTH - 2, GROUP_PARAMETERS_HEIGHT - 2);
-            borderGroupParams.setFill(Color.TRANSPARENT);
-            borderGroupParams.setStroke(Color.BLACK);
-            
-            Group groupParam1 = new Group();
-            {
-                groupParam1.setTranslateX(DEFAULT_SPACING);
-                groupParam1.setTranslateY(DEFAULT_SPACING);
-                Rectangle border = new Rectangle(1, 1, GROUP_PARAMETERS_WIDTH - 2 * DEFAULT_SPACING - 2, 80);
-                border.setFill(Color.TRANSPARENT);
-                border.setStroke(Color.BLACK);
-                Text text = new Text(DEFAULT_SPACING, 2 * DEFAULT_SPACING, "Време за одабир слика у секундама: ");
-                checkTimeIndef = new CheckBox("Неограничено");
-                checkTimeIndef.setTranslateX(DEFAULT_SPACING);
-                checkTimeIndef.setTranslateY(4 * DEFAULT_SPACING);
-                checkTimeIndef.setOnAction(new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent event) {
-                        spinTime.setDisable(checkTimeIndef.isSelected());
-                        selectedLession.timeToPickImgsIndef = checkTimeIndef.isSelected();
-                    }
-                });
-                spinTime = new Spinner<>(5, 20, 5);
-                spinTime.setTranslateX(200);
-                spinTime.setTranslateY(4 * DEFAULT_SPACING);
-                spinTime.valueProperty().addListener((ov, t, t1) -> { selectedLession.timeToPickImgsSecs = t1; });
-                
-                groupParam1.getChildren().addAll(border, text, checkTimeIndef, spinTime);
-            }
-            
-            Group groupParam2 = new Group();
-            {
-                groupParam2.setTranslateX(DEFAULT_SPACING);
-                groupParam2.setTranslateY(2 * DEFAULT_SPACING + GROUP_PARAM_1_HEIGHT);
-                Rectangle border = new Rectangle(1, 1, GROUP_PARAMETERS_WIDTH - 2 * DEFAULT_SPACING - 2, GROUP_PARAM_1_HEIGHT);
-                border.setFill(Color.TRANSPARENT);
-                border.setStroke(Color.BLACK);
-                Text text = new Text(DEFAULT_SPACING, 2 * DEFAULT_SPACING, "Број понуђених слика: ");
-                spinImgsToShow = new Spinner<>(4, 10, 1);
-                spinImgsToShow.setTranslateX(DEFAULT_SPACING);
-                spinImgsToShow.setTranslateY(4 * DEFAULT_SPACING);
-                spinImgsToShow.valueProperty().addListener((ov, t, t1) -> {
-                    IntegerSpinnerValueFactory isvf = (IntegerSpinnerValueFactory)spinMinMatchingImgs.getValueFactory();
-                    isvf.setMax(t1 - 1);
-                    selectedLession.imgsToPresent = t1;
-                });
-                groupParam2.getChildren().addAll(border, text, spinImgsToShow);
-            }
-            
-            Group groupParam3 = new Group();
-            {
-                groupParam3.setTranslateX(DEFAULT_SPACING);
-                groupParam3.setTranslateY(3 * DEFAULT_SPACING + 2 * GROUP_PARAM_1_HEIGHT);
-                Rectangle border = new Rectangle(1, 1, GROUP_PARAMETERS_WIDTH - 2 * DEFAULT_SPACING - 2, GROUP_PARAM_1_HEIGHT);
-                border.setFill(Color.TRANSPARENT);
-                border.setStroke(Color.BLACK);
-                Text text = new Text(DEFAULT_SPACING, 2 * DEFAULT_SPACING, "Минимални број коректних слика: ");
-                spinMinMatchingImgs = new Spinner<>(0, 3, 1);
-                spinMinMatchingImgs.setTranslateX(DEFAULT_SPACING);
-                spinMinMatchingImgs.setTranslateY(4 * DEFAULT_SPACING);
-                spinMinMatchingImgs.valueProperty().addListener((ov, t, t1) -> { selectedLession.minMatchingImgs = t1; });
-                groupParam3.getChildren().addAll(border, text, spinMinMatchingImgs);
-            }
-            
-            groupParams.getChildren().addAll(borderGroupParams, groupParam1, groupParam2, groupParam3);
         }
         
         root = new Group();
@@ -509,7 +513,7 @@ public class BukvarEditor extends Application {
         spinImgsToShow.getValueFactory().setValue(selectedLession.imgsToPresent);
         spinMinMatchingImgs.getValueFactory().setValue(selectedLession.minMatchingImgs);
         
-        spImageList.setVvalue(rememberedScrollPane);
+        spImageList.setHvalue(rememberedScrollPane);
         rememberedScrollPane = 0.0;
     }
     
@@ -532,7 +536,7 @@ public class BukvarEditor extends Application {
     private void addImage(int imageId) {
         Group groupImage = new Group();
         
-        Line topLine = new Line(0, 0, GROUP_IMAGE_LIST_WIDTH, 0);
+        Line leftLine = new Line(0, 0, 0, 3 * DEFAULT_SPACING + IMAGE_HEIGHT + BTN_NEW_IMAGE_HEIGHT);
         Image image = selectedLession.images.get(imageId).image;
         Rectangle rectImage = new Rectangle(0, 0, image.getWidth(), image.getHeight());
         rectImage.setTranslateX(DEFAULT_SPACING + (IMAGE_WIDTH - image.getWidth()) / 2);
@@ -558,26 +562,28 @@ public class BukvarEditor extends Application {
             }
         });
         Button btnRemove = new Button("Уклони слику");
-        btnRemove.setTranslateX(2 * DEFAULT_SPACING + IMAGE_WIDTH);
+        btnRemove.setTranslateX(DEFAULT_SPACING);
         btnRemove.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-        btnRemove.setTranslateY(2 * DEFAULT_SPACING);
+        btnRemove.setTranslateY(2 * DEFAULT_SPACING + IMAGE_HEIGHT);
         btnRemove.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 selectedLession.images.remove(imageId);
-                rememberedScrollPane = spImageList.getVvalue();
+                rememberedScrollPane = spImageList.getHvalue();
                 selectLession(selectedLession.name);
             }
         });
         TextField letter = new TextField(selectedLession.images.get(imageId).letter);
-        letter.setTranslateX(2 * DEFAULT_SPACING + IMAGE_WIDTH);
-        letter.setTranslateY(3 * DEFAULT_SPACING + 2 * BTN_NEW_IMAGE_HEIGHT);
-        letter.setMaxWidth(IMAGE_WIDTH / 2);
-        letter.fontProperty().set(Font.font(STYLESHEET_CASPIAN, BTN_NEW_IMAGE_HEIGHT));
+        letter.setTranslateX(140);
+        letter.setTranslateY(2 * DEFAULT_SPACING + IMAGE_WIDTH);
+        letter.setMaxWidth(IMAGE_WIDTH / 3);
+        letter.fontProperty().set(Font.font(STYLESHEET_CASPIAN, BTN_NEW_IMAGE_HEIGHT / 2));
         letter.textProperty().addListener(new LetterChangeListener(letter, imageId));
-        Line bottomLine = new Line(0, 2 * DEFAULT_SPACING + IMAGE_HEIGHT, GROUP_IMAGE_LIST_WIDTH, 2 * DEFAULT_SPACING + IMAGE_HEIGHT);
-        groupImage.getChildren().addAll(topLine, rectImage, btnRemove, letter, bottomLine);
-        groupImage.setTranslateY(imageId * (2 * DEFAULT_SPACING + IMAGE_HEIGHT));
+        Line rightLine = new Line(
+                2 * DEFAULT_SPACING + IMAGE_WIDTH, 0, 
+                2 * DEFAULT_SPACING + IMAGE_WIDTH, 3 * DEFAULT_SPACING + IMAGE_HEIGHT + BTN_NEW_IMAGE_HEIGHT);
+        groupImage.getChildren().addAll(leftLine, rectImage, btnRemove, letter, rightLine);
+        groupImage.setTranslateX(imageId * (2 * DEFAULT_SPACING + IMAGE_HEIGHT));
         
         groupImageList.getChildren().add(groupImage);
     }
