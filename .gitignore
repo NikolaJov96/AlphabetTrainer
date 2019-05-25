@@ -3,7 +3,9 @@
 /nbproject
 /test
 /samples
+/.idea
 
 build.xml
 manifest.mf
 bukvar.bin
+AlphabetTrainer.iml
