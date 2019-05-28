@@ -4,6 +4,7 @@
 /test
 /samples
 /.idea
+/out
 
 build.xml
 manifest.mf
