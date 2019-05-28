@@ -21,7 +21,7 @@ import javafx.scene.image.Image;
 public class Bukvar implements Serializable {
     
     private static final String dataFileName = "bukvar.bin";
-    private static final String frstLessionName = "Прва лекција";
+    private static final String firstLessionName = "Прва лекција";
     
     public HashMap<String, Lession> lessions;
     public String defaultLessionName;
@@ -44,8 +44,8 @@ public class Bukvar implements Serializable {
 
     private Bukvar(Image table) {
         this.lessions = new HashMap<>();
-        this.defaultLessionName = frstLessionName;
-        this.lessions.put(frstLessionName, new Lession(frstLessionName, table));
+        this.defaultLessionName = firstLessionName;
+        this.lessions.put(firstLessionName, new Lession(firstLessionName, table));
     }
     
     public void save() {

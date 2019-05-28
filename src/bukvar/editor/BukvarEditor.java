@@ -82,7 +82,7 @@ public class BukvarEditor extends Application {
     private static final int IMAGE_HEIGHT = IMAGE_WIDTH;
     
     private static final Set<String> alphabet = new HashSet<>(Arrays.asList(
-            "А", "Б", "В", "Г", "Д", "Ђ", "Е"," Ж", "З", "И", "Ј", "К", "Л", "Љ", "М", 
+            "А", "Б", "В", "Г", "Д", "Ђ", "Е","Ж", "З", "И", "Ј", "К", "Л", "Љ", "М",
             "Н", "Њ", "О", "П", "Р", "С", "Т", "Ћ", "У", "Ф", "Х", "Ц", "Ч", "Џ", "Ш"
     ));
     
