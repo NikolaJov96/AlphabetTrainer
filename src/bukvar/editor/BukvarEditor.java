@@ -21,9 +21,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -93,34 +91,22 @@ public class BukvarEditor extends Application {
     }};
     
     private Stage stage;
-    private Scene scene;
-    private Group root;
-    
-    private Group groupHeader;
+
     private ComboBox<String> comboLessions;
-    private Button btnSave;
-    private Button btnDelete;
-    private Button btnDefault;
     private TextField fieldNewName;
-    private Button btnNewLession;
-    
-    private Group groupTable;
+
     private ComboBox<String> comboColor;
     private Spinner<Integer> spinTick;
     private CheckBox checkStraightLine;
     private CheckBox checkEraser;
-    private Group groupCanvas;
     private DrawableCanvas canvas;
     private Line tempLine;
-     
-    private Group groupParams;
+
     private CheckBox checkTimeIndef;
     private Spinner<Integer> spinTime;
     private Spinner<Integer> spinImgsToShow;
     private Spinner<Integer> spinMinMatchingImgs;
-    
-    private Group groupImages;
-    private Button btnNewImage;
+
     private Group groupImageList;
     private ScrollPane spImageList;
     
@@ -129,13 +115,13 @@ public class BukvarEditor extends Application {
     private Bukvar bukvar;
     private Lession selectedLession;
     private double rememberedScrollPane = 0.0;
-    
+
     class LetterChangeListener implements ChangeListener<String> {
         
         private TextField fieldLetter;
-        private int imageId;
+        int imageId;
         
-        public LetterChangeListener(TextField fieldLetter, int imageId) {
+        LetterChangeListener(TextField fieldLetter, int imageId) {
             this.fieldLetter = fieldLetter;
             this.imageId = imageId;
         }
@@ -159,59 +145,50 @@ public class BukvarEditor extends Application {
     }
     
     class DrawableCanvas extends Canvas {
-        public DrawableCanvas(double width, double height) {
+        DrawableCanvas(double width, double height) {
             super(width, height);
             final GraphicsContext gc = getGraphicsContext2D();
             gc.setFill(Color.WHITE);
             gc.setStroke(colors.get(comboColor.getValue()));
             gc.setLineWidth(spinTick.getValue());
-            addEventHandler(MouseEvent.MOUSE_PRESSED, new EventHandler<MouseEvent>(){
-                @Override
-                public void handle(MouseEvent event) {
-                    if (checkStraightLine.isSelected()) {
-                        gc.setStroke(colors.get(comboColor.getValue()));
-                        tempLine.setStartX(event.getX());
-                        tempLine.setStartY(event.getY());
-                        tempLine.setEndX(event.getX());
-                        tempLine.setEndY(event.getY());
-                        tempLine.setStroke(colors.get(comboColor.getValue()));
-                    } else if (checkEraser.isSelected()) {
-                        gc.setStroke(Color.WHITE);
-                        int width = ERASER * spinTick.getValue();
-                        gc.fillRect(event.getX() - width / 2, event.getY() - width / 2, width, width); gc.stroke();
-                    } else {
-                        gc.setStroke(colors.get(comboColor.getValue()));
-                        gc.beginPath(); gc.moveTo(event.getX(), event.getY()); gc.stroke();
-                    }
+            addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
+                if (checkStraightLine.isSelected()) {
+                    gc.setStroke(colors.get(comboColor.getValue()));
+                    tempLine.setStartX(event.getX());
+                    tempLine.setStartY(event.getY());
+                    tempLine.setEndX(event.getX());
+                    tempLine.setEndY(event.getY());
+                    tempLine.setStroke(colors.get(comboColor.getValue()));
+                } else if (checkEraser.isSelected()) {
+                    gc.setStroke(Color.WHITE);
+                    int width12 = ERASER * spinTick.getValue();
+                    gc.fillRect(event.getX() - (width12 >> 1), event.getY() - (width12 >> 1), width12, width12); gc.stroke();
+                } else {
+                    gc.setStroke(colors.get(comboColor.getValue()));
+                    gc.beginPath(); gc.moveTo(event.getX(), event.getY()); gc.stroke();
                 }
             });
-            addEventHandler(MouseEvent.MOUSE_DRAGGED, new EventHandler<MouseEvent>(){
-                @Override
-                public void handle(MouseEvent event) {
-                    if (checkStraightLine.isSelected()) {
-                        tempLine.setEndX(event.getX());
-                        tempLine.setEndY(event.getY());
-                    } else if (checkEraser.isSelected()) {
-                        int width = ERASER * spinTick.getValue();
-                        gc.rect(event.getX() - width / 2, event.getY() - width / 2, width, width); gc.stroke();
-                    } else {
-                        gc.lineTo(event.getX(), event.getY()); gc.stroke();
-                    }
+            addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> {
+                if (checkStraightLine.isSelected()) {
+                    tempLine.setEndX(event.getX());
+                    tempLine.setEndY(event.getY());
+                } else if (checkEraser.isSelected()) {
+                    int width1 = ERASER * spinTick.getValue();
+                    gc.rect(event.getX() - (width1 >> 1), event.getY() - (width1 >> 1), width1, width1); gc.stroke();
+                } else {
+                    gc.lineTo(event.getX(), event.getY()); gc.stroke();
                 }
             });
-            addEventHandler(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>(){
-                @Override
-                public void handle(MouseEvent event) {
-                    if (checkStraightLine.isSelected()) {
-                        gc.beginPath(); gc.moveTo(tempLine.getStartX(), tempLine.getStartY()); gc.stroke();
-                        gc.lineTo(event.getX(), event.getY()); gc.stroke();
-                        tempLine.setStartX(0);
-                        tempLine.setStartY(0);
-                        tempLine.setEndX(0);
-                        tempLine.setEndY(0);
-                    } else if (checkEraser.isSelected()) {
-                        gc.setStroke(colors.get(comboColor.getValue()));
-                    }
+            addEventHandler(MouseEvent.MOUSE_RELEASED, event -> {
+                if (checkStraightLine.isSelected()) {
+                    gc.beginPath(); gc.moveTo(tempLine.getStartX(), tempLine.getStartY()); gc.stroke();
+                    gc.lineTo(event.getX(), event.getY()); gc.stroke();
+                    tempLine.setStartX(0);
+                    tempLine.setStartY(0);
+                    tempLine.setEndX(0);
+                    tempLine.setEndY(0);
+                } else if (checkEraser.isSelected()) {
+                    gc.setStroke(colors.get(comboColor.getValue()));
                 }
             });
         }
@@ -224,8 +201,8 @@ public class BukvarEditor extends Application {
         fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter(
                 "Images", "jpg", "png", "gif", "bmp"
         ));
-        
-        groupHeader = new Group();
+
+        Group groupHeader = new Group();
         {
             Rectangle border = new Rectangle(1, 1, GROUP_HEADER_WIDTH - 2, GROUP_HEADER_HEIGHT - 2);
             border.setFill(Color.TRANSPARENT);
@@ -236,22 +213,15 @@ public class BukvarEditor extends Application {
             comboLessions.setTranslateY(2 * DEFAULT_SPACING);
             comboLessions.setMinWidth(200);
             comboLessions.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-            comboLessions.valueProperty().addListener(new ChangeListener<String>() {
-                @Override 
-                public void changed(ObservableValue ov, String t, String t1) { 
-                    if (t1 != null) { saveBukvar(t1); }
-                }
-            });
-            btnSave = new Button();
+            comboLessions.valueProperty().addListener((ov, t, t1) -> { if (t1 != null) { saveBukvar(t1); } });
+            Button btnSave = new Button();
             btnSave.setText("Сачувај");
             btnSave.setMaxWidth(120);
             btnSave.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             btnSave.setTranslateX(230);
             btnSave.setTranslateY(2 * DEFAULT_SPACING);
-            btnSave.setOnAction(new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent event) { saveBukvar(null); }
-            });
-            btnDelete = new Button();
+            btnSave.setOnAction(event -> saveBukvar(null));
+            Button btnDelete = new Button();
             btnDelete.setText("Обриши");
             btnDelete.setMaxWidth(120);
             btnDelete.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
@@ -260,41 +230,41 @@ public class BukvarEditor extends Application {
             btnDelete.setOnAction((ActionEvent event) -> {
                 if (bukvar.deleteLession(selectedLession.name)) {
                     refreshLessions();
-                    selectLession(bukvar.defaultLessionName);
+                    comboLessions.setValue(bukvar.defaultLessionName);
                 }
             });
-            btnDefault = new Button();
+            Button btnDefault = new Button();
             btnDefault.setText("Подразумевана");
             btnDefault.setMaxWidth(150);
             btnDefault.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
             btnDefault.setTranslateX(430);
             btnDefault.setTranslateY(2 * DEFAULT_SPACING);
-            btnDefault.setOnAction((ActionEvent event) -> { bukvar.defaultLessionName = selectedLession.name; });
+            btnDefault.setOnAction((ActionEvent event) -> bukvar.defaultLessionName = selectedLession.name);
             fieldNewName = new TextField("");
             fieldNewName.fontProperty().set(Font.font(STYLESHEET_CASPIAN, 20));
             fieldNewName.setTranslateX(680);
             fieldNewName.setTranslateY(2 * DEFAULT_SPACING);
             fieldNewName.setMaxWidth(150);
-            btnNewLession = new Button();
-            btnNewLession.setText("Нова лекција");
-            btnNewLession.setMaxWidth(150);
-            btnNewLession.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-            btnNewLession.setTranslateX(850);
-            btnNewLession.setTranslateY(2 * DEFAULT_SPACING);
-            btnNewLession.setOnAction((ActionEvent event) -> {
+            Button btnNewLesson = new Button();
+            btnNewLesson.setText("Нова лекција");
+            btnNewLesson.setMaxWidth(150);
+            btnNewLesson.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
+            btnNewLesson.setTranslateX(850);
+            btnNewLesson.setTranslateY(2 * DEFAULT_SPACING);
+            btnNewLesson.setOnAction((ActionEvent event) -> {
                 String name = fieldNewName.getText();
                 if (name.length() > 0 && !bukvar.lessions.containsKey(name)) {
                     bukvar.lessions.put(name, new Lession(name, blankTable()));
                     refreshLessions();
-                    selectLession(name);
+                    comboLessions.setValue(name);
                     fieldNewName.setText("");
                 }
             });
             
-            groupHeader.getChildren().addAll(border, comboLessions, btnSave, btnDelete, btnDefault, fieldNewName, btnNewLession);
+            groupHeader.getChildren().addAll(border, comboLessions, btnSave, btnDelete, btnDefault, fieldNewName, btnNewLesson);
         }
-        
-        groupTable = new Group();
+
+        Group groupTable = new Group();
         {
             groupTable.setTranslateY(GROUP_HEADER_HEIGHT);
             
@@ -324,20 +294,16 @@ public class BukvarEditor extends Application {
             checkStraightLine = new CheckBox("Права линија");
             checkStraightLine.setTranslateX(600);
             checkStraightLine.setTranslateY(2 * DEFAULT_SPACING);
-            checkStraightLine.setOnAction(new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent event) {
-                    if (checkStraightLine.isSelected()) { checkEraser.setSelected(false); }
-                }
+            checkStraightLine.setOnAction(event -> {
+                if (checkStraightLine.isSelected()) { checkEraser.setSelected(false); }
             });
             checkEraser = new CheckBox("Гумица");
             checkEraser.setTranslateX(750);
             checkEraser.setTranslateY(2 * DEFAULT_SPACING);
-            checkEraser.setOnAction(new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent event) {
-                    if (checkEraser.isSelected()) { checkStraightLine.setSelected(false); }
-                }
+            checkEraser.setOnAction(event -> {
+                if (checkEraser.isSelected()) { checkStraightLine.setSelected(false); }
             });
-            groupCanvas = new Group();
+            Group groupCanvas = new Group();
             groupCanvas.setTranslateX(DEFAULT_SPACING);
             groupCanvas.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
             canvas = new DrawableCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -345,14 +311,14 @@ public class BukvarEditor extends Application {
             tempLine = new Line(0, 0, 0, 0);
             tempLine.setTranslateX(DEFAULT_SPACING);
             tempLine.setTranslateY(2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT);
-            Rectangle borderCanv = new Rectangle(DEFAULT_SPACING - 1, 2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT - 1, CANVAS_WIDTH + 2, CANVAS_HEIGHT + 2);
-            borderCanv.setFill(Color.TRANSPARENT);
-            borderCanv.setStroke(Color.BLACK);
+            Rectangle borderCanvas = new Rectangle(DEFAULT_SPACING - 1, 2 * DEFAULT_SPACING + BTN_NEW_IMAGE_HEIGHT - 1, CANVAS_WIDTH + 2, CANVAS_HEIGHT + 2);
+            borderCanvas.setFill(Color.TRANSPARENT);
+            borderCanvas.setStroke(Color.BLACK);
             
-            groupTable.getChildren().addAll(border, text1, comboColor, text2, spinTick, checkStraightLine, checkEraser, borderCanv, groupCanvas, tempLine);
+            groupTable.getChildren().addAll(border, text1, comboColor, text2, spinTick, checkStraightLine, checkEraser, borderCanvas, groupCanvas, tempLine);
         }
-        
-        groupParams = new Group();
+
+        Group groupParams = new Group();
         {
             groupParams.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT);
             
@@ -371,18 +337,15 @@ public class BukvarEditor extends Application {
                 checkTimeIndef = new CheckBox("Неограничено");
                 checkTimeIndef.setTranslateX(DEFAULT_SPACING);
                 checkTimeIndef.setTranslateY(4 * DEFAULT_SPACING);
-                checkTimeIndef.setOnAction(new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent event) {
-                        spinTime.setDisable(checkTimeIndef.isSelected());
-                        selectedLession.timeToPickImgsIndef = checkTimeIndef.isSelected();
-                    }
+                checkTimeIndef.setOnAction(event -> {
+                    spinTime.setDisable(checkTimeIndef.isSelected());
+                    selectedLession.timeToPickImgsIndef = checkTimeIndef.isSelected();
                 });
                 spinTime = new Spinner<>(5, 20, 5);
                 spinTime.setTranslateX(170);
                 spinTime.setTranslateY(4 * DEFAULT_SPACING);
                 spinTime.setMaxWidth(PARAM_SPIN_WIDTH);
-                spinTime.valueProperty().addListener((ov, t, t1) -> { selectedLession.timeToPickImgsSecs = t1; });
+                spinTime.valueProperty().addListener((ov, t, t1) -> selectedLession.timeToPickImgsSecs = t1);
                 
                 groupParam1.getChildren().addAll(border, text, checkTimeIndef, spinTime);
             }
@@ -419,14 +382,15 @@ public class BukvarEditor extends Application {
                 spinMinMatchingImgs.setTranslateX(DEFAULT_SPACING);
                 spinMinMatchingImgs.setTranslateY(4 * DEFAULT_SPACING);
                 spinMinMatchingImgs.setMaxWidth(PARAM_SPIN_WIDTH);
-                spinMinMatchingImgs.valueProperty().addListener((ov, t, t1) -> { selectedLession.minMatchingImgs = t1; });
+                spinMinMatchingImgs.valueProperty().addListener((ov, t, t1) -> selectedLession.minMatchingImgs = t1);
                 groupParam3.getChildren().addAll(border, text, spinMinMatchingImgs);
             }
             
             groupParams.getChildren().addAll(borderGroupParams, groupParam1, groupParam2, groupParam3);
         }
-        
-        groupImages = new Group();
+
+        Group groupImages = new Group();
+        Button btnNewImage;
         {
             groupImages.setTranslateY(GROUP_HEADER_HEIGHT + GROUP_TABLE_HEIGHT + GROUP_PARAMETERS_HEIGHT);
             
@@ -435,20 +399,17 @@ public class BukvarEditor extends Application {
                 btnNewImage.setText("Нова слика");
                 btnNewImage.setMinWidth(BTN_NEW_IMAGE_WIDTH);
                 btnNewImage.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
-                btnNewImage.setTranslateX((GROUP_IMAGES_WIDTH - BTN_NEW_IMAGE_WIDTH) / 2);
+                btnNewImage.setTranslateX((GROUP_IMAGES_WIDTH - BTN_NEW_IMAGE_WIDTH) >> 1);
                 btnNewImage.setTranslateY(DEFAULT_SPACING);
-                btnNewImage.setOnAction(new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent event) {
-                        File file = fileChooser.showOpenDialog(primaryStage);
-                        if (file != null) {
-                            String fPath = file.toURI().toString();
-                            Image image = loadImage(fPath);
-                            String imageType = fPath.substring(fPath.length() - 3);
-                            selectedLession.images.add(new ImgContainer(image, imageType, "А"));
-                            addImage(selectedLession.images.size() - 1);
-                            spImageList.setHvalue(1.0);
-                        }
+                btnNewImage.setOnAction(event -> {
+                    File file = fileChooser.showOpenDialog(primaryStage);
+                    if (file != null) {
+                        String fPath = file.toURI().toString();
+                        Image image = loadImage(fPath);
+                        String imageType = fPath.substring(fPath.length() - 3);
+                        selectedLession.images.add(new ImgContainer(image, imageType, "А"));
+                        addImage(selectedLession.images.size() - 1);
+                        spImageList.setHvalue(1.0);
                     }
                 });
             }
@@ -468,30 +429,27 @@ public class BukvarEditor extends Application {
 
             groupImages.getChildren().addAll(btnNewImage, borderGroupImages, spImageList);
         }
-        
-        root = new Group();
+
+        Group root = new Group();
         root.getChildren().addAll(groupHeader, groupTable, groupImages, groupParams);
-        scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
+        Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         
         bukvar = Bukvar.getBukvar(blankTable());
-        selectLession(bukvar.defaultLessionName);
         refreshLessions();
+        comboLessions.setValue(bukvar.defaultLessionName);
         
         primaryStage.setTitle("Буквар - Едитор");
         primaryStage.setScene(scene);
         primaryStage.resizableProperty().set(false);
         primaryStage.show();
         
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override public void run() { saveBukvar(null); }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> saveBukvar(null)));
         btnNewImage.toFront();
     }
     
     private void refreshLessions() {
         comboLessions.getItems().clear();
         comboLessions.getItems().addAll(bukvar.lessions.keySet());
-        comboLessions.setValue(bukvar.defaultLessionName);
     }
     
     private void selectLession(String lessionName) {
@@ -499,7 +457,6 @@ public class BukvarEditor extends Application {
         groupImageList.getChildren().clear();
         
         selectedLession = bukvar.lessions.get(lessionName);
-        comboLessions.setValue(lessionName);
         
         canvas.getGraphicsContext2D().drawImage(selectedLession.table, 0, 0);
         
@@ -521,7 +478,7 @@ public class BukvarEditor extends Application {
         Image image = new Image(path);
         if (image.isError()) { return null; }
         
-        double scale = 1.0;
+        double scale;
         double w = image.getWidth();
         double h = image.getHeight();
         if (w > h) {
@@ -542,36 +499,29 @@ public class BukvarEditor extends Application {
         rectImage.setTranslateX(DEFAULT_SPACING + (IMAGE_WIDTH - image.getWidth()) / 2);
         rectImage.setTranslateY(DEFAULT_SPACING + (IMAGE_HEIGHT - image.getHeight()) / 2);
         rectImage.setFill(new ImagePattern(image));
-        rectImage.setOnMouseClicked(new EventHandler<MouseEvent>()
-        {
-            @Override
-            public void handle(MouseEvent t) {
-                File file = fileChooser.showOpenDialog(stage);
-                if (file != null) {
-                    String fPath = file.toURI().toString();
-                    Image image = loadImage(fPath);
-                    String imageType = fPath.substring(fPath.length() - 3);
-                    selectedLession.images.get(imageId).image = image;
-                    selectedLession.images.get(imageId).imgType = imageType;
-                    rectImage.setWidth(image.getWidth());
-                    rectImage.setHeight(image.getHeight());
-                    rectImage.setTranslateX(DEFAULT_SPACING + (IMAGE_WIDTH - image.getWidth()) / 2);
-                    rectImage.setTranslateY(DEFAULT_SPACING + (IMAGE_HEIGHT - image.getHeight()) / 2);
-                    rectImage.setFill(new ImagePattern(image));
-                }
+        rectImage.setOnMouseClicked(t -> {
+            File file = fileChooser.showOpenDialog(stage);
+            if (file != null) {
+                String fPath = file.toURI().toString();
+                Image image1 = loadImage(fPath);
+                String imageType = fPath.substring(fPath.length() - 3);
+                selectedLession.images.get(imageId).image = image1;
+                selectedLession.images.get(imageId).imgType = imageType;
+                rectImage.setWidth(image1.getWidth());
+                rectImage.setHeight(image1.getHeight());
+                rectImage.setTranslateX(DEFAULT_SPACING + (IMAGE_WIDTH - image1.getWidth()) / 2);
+                rectImage.setTranslateY(DEFAULT_SPACING + (IMAGE_HEIGHT - image1.getHeight()) / 2);
+                rectImage.setFill(new ImagePattern(image1));
             }
         });
         Button btnRemove = new Button("Уклони слику");
         btnRemove.setTranslateX(DEFAULT_SPACING);
         btnRemove.setMinHeight(BTN_NEW_IMAGE_HEIGHT);
         btnRemove.setTranslateY(2 * DEFAULT_SPACING + IMAGE_HEIGHT);
-        btnRemove.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                selectedLession.images.remove(imageId);
-                rememberedScrollPane = spImageList.getHvalue();
-                selectLession(selectedLession.name);
-            }
+        btnRemove.setOnAction(event -> {
+            selectedLession.images.remove(imageId);
+            rememberedScrollPane = spImageList.getHvalue();
+            comboLessions.setValue(selectedLession.name);
         });
         TextField letter = new TextField(selectedLession.images.get(imageId).letter);
         letter.setTranslateX(140);
@@ -596,21 +546,17 @@ public class BukvarEditor extends Application {
         return wim;
     }
     
-    private void saveBukvar(String nextLession) {
+    private void saveBukvar(String nextLesson) {
         if (selectedLession == null) {
+            if (nextLesson != null) { selectLession(nextLesson); }
             return;
         }
         WritableImage wim = new WritableImage(CANVAS_WIDTH, CANVAS_HEIGHT);
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                canvas.snapshot(null, wim);
-                selectedLession.table = wim;
-                bukvar.save();
-                if (nextLession != null) {
-                    selectLession(nextLession);
-                }
-            }
+        Platform.runLater(() -> {
+            canvas.snapshot(null, wim);
+            selectedLession.table = wim;
+            bukvar.save();
+            if (nextLesson != null) { selectLession(nextLesson); }
         });
     }
 
