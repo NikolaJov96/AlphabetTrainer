@@ -385,9 +385,13 @@ public class BukvarTrenazer extends Application {
 
             Rectangle rectangle = new Rectangle(0, (GROUP_TABLE_HEIGHT - CANVAS_HEIGHT) / 2, CANVAS_WIDTH, CANVAS_HEIGHT);
             Image image = selectedLession.table;
-            ImagePattern imagePattern = new ImagePattern(image, 0, 0, 1, 1, true);
-            rectangle.setFill(imagePattern);
-
+            if (image != null) {
+                ImagePattern imagePattern = new ImagePattern(image, 0, 0, 1, 1, true);
+                rectangle.setFill(imagePattern);
+            }
+            else {
+                rectangle.setFill(Color.WHITE);
+            }
             groupTable.getChildren().addAll(border, rectangle);
 
             letters = new ArrayList<>();
