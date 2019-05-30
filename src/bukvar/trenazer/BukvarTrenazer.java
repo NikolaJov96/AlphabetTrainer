@@ -268,8 +268,8 @@ public class BukvarTrenazer extends Application {
         }
         int colsNumber = (int)Math.ceil(Math.sqrt(count));
         int rowsNumber = (int)Math.ceil((double)count / colsNumber);
-        int GROUP_IMAGE_HEIGHT = GROUP_IMAGE_LIST_HEIGHT / rowsNumber;
-        int GROUP_IMAGE_WIDTH = GROUP_IMAGE_LIST_WIDTH / colsNumber;
+        int GROUP_IMAGE_HEIGHT = GROUP_IMAGE_LIST_HEIGHT / rowsNumber - 2 * DEFAULT_SPACING;
+        int GROUP_IMAGE_WIDTH = GROUP_IMAGE_LIST_WIDTH / colsNumber - 2 * DEFAULT_SPACING;
         int i = 0, j = 0;
         for (Rectangle rectangle : drawnPictures) {
             Platform.runLater(new Runnable() {
@@ -291,8 +291,12 @@ public class BukvarTrenazer extends Application {
             Rectangle rectangle = allPictures.get(image);
             rectangle.setHeight(height * scale);
             rectangle.setWidth(width * scale);
-            rectangle.setTranslateX(DEFAULT_SPACING + j * GROUP_IMAGE_WIDTH);
-            rectangle.setTranslateY(DEFAULT_SPACING + i * GROUP_IMAGE_HEIGHT);
+
+            double ver_shift = (GROUP_IMAGE_HEIGHT - height * scale) / 2;
+            double hor_shift = (GROUP_IMAGE_WIDTH - width * scale) / 2;
+            rectangle.setTranslateX(j * (GROUP_IMAGE_WIDTH + 2 * DEFAULT_SPACING) + hor_shift + DEFAULT_SPACING);
+            rectangle.setTranslateY(i * (GROUP_IMAGE_HEIGHT + 2 * DEFAULT_SPACING) + ver_shift + DEFAULT_SPACING);
+
             Platform.runLater(new Runnable() {
                 @Override
                 public void run() {
