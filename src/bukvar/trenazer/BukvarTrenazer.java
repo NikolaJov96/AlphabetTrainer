@@ -50,7 +50,7 @@ public class BukvarTrenazer extends Application {
     private static final String SCORE_SEPARATOR = " / ";
 
     private static final int GROUP_IMAGES_WIDTH = WINDOW_WIDTH;
-    private static final int GROUP_IMAGES_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT - GROUP_PARAMETERS_HEIGHT + DEFAULT_SPACING;
+    private static final int GROUP_IMAGES_HEIGHT = WINDOW_HEIGHT - GROUP_HEADER_HEIGHT - GROUP_TABLE_HEIGHT - GROUP_PARAMETERS_HEIGHT;
     private static final int BTN_WIDTH = 150;
     private static final int BTN_HEIGHT = 40;
     private static final int GROUP_IMAGE_LIST_WIDTH = GROUP_IMAGES_WIDTH - 2 * DEFAULT_SPACING;
@@ -270,6 +270,8 @@ public class BukvarTrenazer extends Application {
         int rowsNumber = (int)Math.ceil((double)count / colsNumber);
         int GROUP_IMAGE_HEIGHT = GROUP_IMAGE_LIST_HEIGHT / rowsNumber - 2 * DEFAULT_SPACING;
         int GROUP_IMAGE_WIDTH = GROUP_IMAGE_LIST_WIDTH / colsNumber - 2 * DEFAULT_SPACING;
+        System.out.println("GROUP_IMAGE_WIDTH " + GROUP_IMAGE_WIDTH);
+        System.out.println("GROUP_IMAGE_HEIGHT " + GROUP_IMAGE_HEIGHT);
         int i = 0, j = 0;
         for (Rectangle rectangle : drawnPictures) {
             Platform.runLater(new Runnable() {
@@ -297,6 +299,9 @@ public class BukvarTrenazer extends Application {
             rectangle.setTranslateX(j * (GROUP_IMAGE_WIDTH + 2 * DEFAULT_SPACING) + hor_shift + DEFAULT_SPACING);
             rectangle.setTranslateY(i * (GROUP_IMAGE_HEIGHT + 2 * DEFAULT_SPACING) + ver_shift + DEFAULT_SPACING);
 
+            System.out.println("X " + (j * (GROUP_IMAGE_WIDTH + 2 * DEFAULT_SPACING) + hor_shift + DEFAULT_SPACING));
+            System.out.println("Y " + (i * (GROUP_IMAGE_HEIGHT + 2 * DEFAULT_SPACING) + ver_shift + DEFAULT_SPACING));
+
             Platform.runLater(new Runnable() {
                 @Override
                 public void run() {
@@ -310,6 +315,7 @@ public class BukvarTrenazer extends Application {
                 i++;
             }
         }
+        System.out.println("----------------------");
     }
 
     private void countNumberOfLetters (Lession lession) {
@@ -442,11 +448,11 @@ public class BukvarTrenazer extends Application {
             border.setFill(Color.TRANSPARENT);
             border.setStroke(Color.BLACK);
 
-            /*System.out.println("GROUP_IMAGE_LIST_WIDTH" + GROUP_IMAGE_LIST_WIDTH);
-            System.out.println("GROUP_IMAGE_LIST_HEIGHT" + GROUP_IMAGE_LIST_HEIGHT);
-            System.out.println("GROUP_IMAGES_WIDTH" + GROUP_IMAGES_WIDTH);
-            System.out.println("GROUP_IMAGES_HEIGHT" + GROUP_IMAGES_HEIGHT);
-            System.out.println("GROUP_IMAGES_HEIGHT - BTN_HEIGHT - 2 * DEFAULT_SPACING" + (GROUP_IMAGES_HEIGHT - BTN_HEIGHT - 2 * DEFAULT_SPACING));*/
+            System.out.println("GROUP_IMAGE_LIST_WIDTH " + GROUP_IMAGE_LIST_WIDTH);
+            System.out.println("GROUP_IMAGE_LIST_HEIGHT " + GROUP_IMAGE_LIST_HEIGHT);
+            System.out.println("GROUP_IMAGES_WIDTH " + GROUP_IMAGES_WIDTH);
+            System.out.println("GROUP_IMAGES_HEIGHT " + GROUP_IMAGES_HEIGHT);
+            System.out.println("GROUP_IMAGES_HEIGHT - BTN_HEIGHT - 2 * DEFAULT_SPACING " + (GROUP_IMAGES_HEIGHT - BTN_HEIGHT - 2 * DEFAULT_SPACING));
 
             btnNextQuestion = new Button();
             {
