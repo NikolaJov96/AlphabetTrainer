@@ -58,7 +58,7 @@ public class BukvarTrenazer extends Application {
     private static final int IMAGE_WIDTH = 200;
     private static final int IMAGE_HEIGHT = IMAGE_WIDTH;
 
-    private static final Paint SELECT_COLOR = Color.rgb(51, 204, 51, 0.5);
+    private static final Paint SELECT_COLOR = Color.rgb(255, 155, 0, 0.7);
     private static final Paint UNSELECT_COLOR = Color.rgb(255, 255, 255, 0.5);
 
     private static final ArrayList<String> alphabet = new ArrayList<>(Arrays.asList(
@@ -204,7 +204,7 @@ public class BukvarTrenazer extends Application {
                 mistake = true;
             }
             else if (correctPictures.containsKey(image)) {
-                correctPictures.get(image).setStrokeWidth(3);
+                correctPictures.get(image).setStrokeWidth(10);
                 correctPictures.get(image).setStroke(Color.YELLOW);
                 mistake = true;
             }
@@ -245,7 +245,7 @@ public class BukvarTrenazer extends Application {
                     }
                     else {
                         selectedPictures.put(image, rectangle);
-                        selectedPictures.get(image).setStrokeWidth(3);
+                        selectedPictures.get(image).setStrokeWidth(10);
                     }
                 });
                 count++;
