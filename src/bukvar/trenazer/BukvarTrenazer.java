@@ -167,21 +167,6 @@ public class BukvarTrenazer extends Application {
                         }
                         timeRemaining--;
                     }
-                    /*if (!theEnd) {
-                        timeText.setText(REMAINING_TIME + timeRemaining);
-                    }
-                    //todo: check number of guessed pictures
-                    //checkAnswer();
-
-                    if (!nextQuestion) {
-                        synchronized (this) {
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }*/
                     if (!theEnd) {
                         timeText.setText(REMAINING_TIME + timeRemaining);
                         checkAnswer();
@@ -270,8 +255,6 @@ public class BukvarTrenazer extends Application {
         int rowsNumber = (int)Math.ceil((double)count / colsNumber);
         int GROUP_IMAGE_HEIGHT = GROUP_IMAGE_LIST_HEIGHT / rowsNumber - 2 * DEFAULT_SPACING;
         int GROUP_IMAGE_WIDTH = GROUP_IMAGE_LIST_WIDTH / colsNumber - 2 * DEFAULT_SPACING;
-        System.out.println("GROUP_IMAGE_WIDTH " + GROUP_IMAGE_WIDTH);
-        System.out.println("GROUP_IMAGE_HEIGHT " + GROUP_IMAGE_HEIGHT);
         int i = 0, j = 0;
         for (Rectangle rectangle : drawnPictures) {
             Platform.runLater(new Runnable() {
@@ -285,10 +268,10 @@ public class BukvarTrenazer extends Application {
             double scale = 1.0;
             double width = image.getWidth();
             double height = image.getHeight();
-            if (width > height) {
-                scale = GROUP_IMAGE_WIDTH / width;
-            } else {
+            if (height / IMAGE_WIDTH * GROUP_IMAGE_WIDTH > GROUP_IMAGE_HEIGHT) {
                 scale = GROUP_IMAGE_HEIGHT / height;
+            } else {
+                scale = GROUP_IMAGE_WIDTH / width;
             }
             Rectangle rectangle = allPictures.get(image);
             rectangle.setHeight(height * scale);
@@ -298,9 +281,6 @@ public class BukvarTrenazer extends Application {
             double hor_shift = (GROUP_IMAGE_WIDTH - width * scale) / 2;
             rectangle.setTranslateX(j * (GROUP_IMAGE_WIDTH + 2 * DEFAULT_SPACING) + hor_shift + DEFAULT_SPACING);
             rectangle.setTranslateY(i * (GROUP_IMAGE_HEIGHT + 2 * DEFAULT_SPACING) + ver_shift + DEFAULT_SPACING);
-
-            System.out.println("X " + (j * (GROUP_IMAGE_WIDTH + 2 * DEFAULT_SPACING) + hor_shift + DEFAULT_SPACING));
-            System.out.println("Y " + (i * (GROUP_IMAGE_HEIGHT + 2 * DEFAULT_SPACING) + ver_shift + DEFAULT_SPACING));
 
             Platform.runLater(new Runnable() {
                 @Override
@@ -315,7 +295,6 @@ public class BukvarTrenazer extends Application {
                 i++;
             }
         }
-        System.out.println("----------------------");
     }
 
     private void countNumberOfLetters (Lession lession) {
@@ -447,12 +426,6 @@ public class BukvarTrenazer extends Application {
             Rectangle border = new Rectangle(1, 1, GROUP_IMAGES_WIDTH - 2, GROUP_IMAGES_HEIGHT - 2);
             border.setFill(Color.TRANSPARENT);
             border.setStroke(Color.BLACK);
-
-            System.out.println("GROUP_IMAGE_LIST_WIDTH " + GROUP_IMAGE_LIST_WIDTH);
-            System.out.println("GROUP_IMAGE_LIST_HEIGHT " + GROUP_IMAGE_LIST_HEIGHT);
-            System.out.println("GROUP_IMAGES_WIDTH " + GROUP_IMAGES_WIDTH);
-            System.out.println("GROUP_IMAGES_HEIGHT " + GROUP_IMAGES_HEIGHT);
-            System.out.println("GROUP_IMAGES_HEIGHT - BTN_HEIGHT - 2 * DEFAULT_SPACING " + (GROUP_IMAGES_HEIGHT - BTN_HEIGHT - 2 * DEFAULT_SPACING));
 
             btnNextQuestion = new Button();
             {
